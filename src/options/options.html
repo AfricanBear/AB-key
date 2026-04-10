@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MV3 Click Automation Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>MV3 Click Automation</h1>
+      <p>Configure command bindings and action profiles.</p>
+
+      <section>
+        <label for="configJson">Configuration JSON</label>
+        <textarea id="configJson" spellcheck="false"></textarea>
+      </section>
+
+      <section class="controls">
+        <button id="reloadBtn">Reload</button>
+        <button id="saveBtn">Save</button>
+        <button id="exportBtn">Export</button>
+        <button id="importBtn">Import</button>
+      </section>
+
+      <section>
+        <label>
+          <input type="checkbox" id="diagnosticsEnabled" />
+          Enable diagnostics logging
+        </label>
+      </section>
+
+      <pre id="status"></pre>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+  </html>
