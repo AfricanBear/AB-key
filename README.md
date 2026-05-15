@@ -81,3 +81,9 @@ This creates a distributable zip in `dist`.
 For Opera-labeled packaging:
 
 - `./scripts/package.ps1 -Target opera`
+
+## Project Status
+
+For implementation history and continuation notes, see:
+
+- `docs/PROJECT_STATUS.md`

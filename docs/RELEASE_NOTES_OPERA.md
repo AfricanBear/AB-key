@@ -1,4 +1,20 @@
-# Release Notes - Opera Adaptation
+# Release Notes
+
+## v0.2.0 — Abacum tab title
+
+### Included changes
+
+- Added `src/content/abacum-tab-title.js`: prefixes the browser tab title with the client name from the first non-empty `img[alt]` on `app.abacum.io`.
+- Watches DOM mutations and re-applies the prefix on an interval so React title updates do not overwrite it.
+- Manifest `content_scripts` entry scoped to `https://app.abacum.io/*`.
+
+### Upgrade
+
+- Reload the extension (or reinstall from `dist/AB-key.zip` / `dist/AB-key-opera.zip` after packaging).
+
+---
+
+## v0.1.0 — Opera Adaptation
 
 ## Scope
 
