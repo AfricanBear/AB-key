@@ -1,12 +1,12 @@
 # Project Status - AB-key
 
-Last updated: 2026-04-10
+Last updated: 2026-05-19
 
 ## Current Snapshot
 
 - Repository: `https://github.com/AfricanBear/AB-key`
 - Default branch: `main`
-- Latest release tag: `v0.1.0`
+- Latest release tag: `v0.2.1`
 - Packaging outputs:
   - `dist/AB-key.zip`
   - `dist/AB-key-opera.zip`
@@ -57,13 +57,18 @@ Last updated: 2026-04-10
 - Initial commit created and pushed to GitHub.
 - Remote configured to:
   - `origin https://github.com/AfricanBear/AB-key.git`
-- Release tag `v0.1.0` created and pushed.
+- Release tags `v0.1.0`, `v0.2.0`, and `v0.2.1` created and pushed.
+
+### Abacum tab title (v0.2.0 / v0.2.1)
+
+- Content script `src/content/abacum-tab-title.js` for `app.abacum.io`.
+- v0.2.1: options toggle `abacumTabTitleEnabled`; options UI branded **A+B key**.
 
 ## Important Paths
 
 - Manifest: `manifest.json`
 - Background worker: `src/background/service-worker.js`
-- Content script: `src/content/content-script.js`
+- Content scripts: `src/content/content-script.js`, `src/content/abacum-tab-title.js`
 - Config schema: `src/shared/config-schema.js`
 - Options UI: `src/options/options.html`, `src/options/options.js`
 - Packaging scripts: `scripts/package.ps1`, `scripts/validate.ps1`

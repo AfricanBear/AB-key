@@ -82,6 +82,21 @@ For Opera-labeled packaging:
 
 - `./scripts/package.ps1 -Target opera`
 
+## Releases
+
+### v0.2.1
+
+- Abacum tab title can be turned on or off in the **A+B key** options page (`abacumTabTitleEnabled`).
+- Options window title renamed from “MV3 Click Automation” to **A+B key**.
+- Tab title script reacts to saved settings; refresh open Abacum tabs if a change does not apply immediately.
+
+### v0.2.0
+
+- On `app.abacum.io`, the browser tab title is prefixed with the client name from the first non-empty `img[alt]`.
+- DOM mutation observer and periodic refresh keep the prefix when React updates the page title.
+
+Full release notes (including v0.1.0 Opera packaging): [`docs/RELEASE_NOTES_OPERA.md`](docs/RELEASE_NOTES_OPERA.md).
+
 ## Project Status
 
 For implementation history and continuation notes, see:
