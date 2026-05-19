@@ -3,6 +3,7 @@ import { CONFIG_KEY, migrateConfig, validateConfigShape } from "../shared/config
 const configText = document.getElementById("configJson");
 const statusEl = document.getElementById("status");
 const diagnosticsToggle = document.getElementById("diagnosticsEnabled");
+const abacumTabTitleToggle = document.getElementById("abacumTabTitleEnabled");
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -13,6 +14,7 @@ async function loadConfig() {
   const raw = await chrome.storage.local.get(CONFIG_KEY);
   const config = migrateConfig(raw[CONFIG_KEY]);
   diagnosticsToggle.checked = Boolean(config.diagnosticsEnabled);
+  abacumTabTitleToggle.checked = config.abacumTabTitleEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
   setStatus("Configuration loaded.");
 }
@@ -21,6 +23,7 @@ async function saveConfig() {
   try {
     const parsed = JSON.parse(configText.value);
     parsed.diagnosticsEnabled = diagnosticsToggle.checked;
+    parsed.abacumTabTitleEnabled = abacumTabTitleToggle.checked;
     validateConfigShape(parsed);
     await chrome.storage.local.set({ [CONFIG_KEY]: parsed });
     setStatus("Configuration saved.");

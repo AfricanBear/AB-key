@@ -1,7 +1,11 @@
 (function () {
   "use strict";
 
+  const CONFIG_KEY = "mv3ClickAutomation.config";
   const TITLE_PREFIX_RE = /^.*?\s\|\s/;
+
+  let observer = null;
+  let intervalId = null;
 
   function getClientName() {
     const img = document.querySelector('img[alt]:not([alt=""])');
@@ -11,6 +15,10 @@
     if (!alt || alt.length < 2) return null;
 
     return alt;
+  }
+
+  function stripTitlePrefix() {
+    document.title = document.title.replace(TITLE_PREFIX_RE, "");
   }
 
   function updateTitle() {
@@ -23,10 +31,24 @@
     document.title = `${clientName} | ${cleanTitle}`;
   }
 
+  function stop() {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+    stripTitlePrefix();
+  }
+
   function start() {
+    if (observer || intervalId) return;
+
     updateTitle();
 
-    const observer = new MutationObserver(() => {
+    observer = new MutationObserver(() => {
       updateTitle();
     });
 
@@ -35,12 +57,38 @@
     }
 
     // React may overwrite document.title after navigation or state updates.
-    setInterval(updateTitle, 1000);
+    intervalId = setInterval(updateTitle, 1000);
+  }
+
+  async function isEnabled() {
+    const data = await chrome.storage.local.get(CONFIG_KEY);
+    const config = data?.[CONFIG_KEY];
+    if (!config || typeof config.abacumTabTitleEnabled !== "boolean") return true;
+    return config.abacumTabTitleEnabled;
+  }
+
+  async function applySetting() {
+    const enabled = await isEnabled();
+    if (enabled) {
+      start();
+    } else {
+      stop();
+    }
+  }
+
+  function onConfigChanged(changes) {
+    if (!changes[CONFIG_KEY]) return;
+    applySetting();
+  }
+
+  function init() {
+    applySetting();
+    chrome.storage.onChanged.addListener(onConfigChanged);
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", start, { once: true });
+    document.addEventListener("DOMContentLoaded", init, { once: true });
   } else {
-    start();
+    init();
   }
 })();

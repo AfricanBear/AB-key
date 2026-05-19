@@ -38,6 +38,17 @@ button {
   cursor: pointer;
 }
 
+.feature-toggles label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.feature-toggles .hint {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #5a6578;
+}
+
 #status {
   margin-top: 12px;
   padding: 8px;

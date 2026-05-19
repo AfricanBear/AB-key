@@ -6,6 +6,7 @@ export const CONFIG_KEY = "mv3ClickAutomation.config";
 export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
   diagnosticsEnabled: false,
+  abacumTabTitleEnabled: true,
   commandBindings: {
     run_primary_action: "action.primary",
     run_secondary_action: "action.secondary"
@@ -176,6 +177,9 @@ export function migrateConfig(rawConfig) {
   let next = rawConfig;
   if (version < 1) {
     next = { ...DEFAULT_CONFIG, ...rawConfig, configVersion: 1 };
+  }
+  if (typeof next.abacumTabTitleEnabled !== "boolean") {
+    next = { ...next, abacumTabTitleEnabled: DEFAULT_CONFIG.abacumTabTitleEnabled };
   }
   validateConfigShape(next);
   return next;

@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MV3 Click Automation Settings</title>
+    <title>A+B key Settings</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
     <main>
-      <h1>MV3 Click Automation</h1>
+      <h1>A+B key</h1>
       <p>Configure command bindings and action profiles.</p>
 
       <section>
@@ -23,7 +23,13 @@
         <button id="importBtn">Import</button>
       </section>
 
-      <section>
+      <section class="feature-toggles">
+        <label>
+          <input type="checkbox" id="abacumTabTitleEnabled" />
+          Abacum: show client name in tab title
+        </label>
+        <p class="hint">Open Abacum tabs may need to be refreshed for this setting to take effect.</p>
+
         <label>
           <input type="checkbox" id="diagnosticsEnabled" />
           Enable diagnostics logging

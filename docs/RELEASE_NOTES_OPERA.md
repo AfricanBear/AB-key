@@ -1,5 +1,19 @@
 # Release Notes
 
+## v0.2.1 — Options and tab title toggle
+
+### Included changes
+
+- Abacum tab title feature is configurable via the options page (`abacumTabTitleEnabled`).
+- Options window renamed to **A+B key** (was “MV3 Click Automation”).
+- Tab title script respects storage changes; open Abacum tabs may still need a refresh in some cases.
+
+### Upgrade
+
+- Reload the extension after updating.
+
+---
+
 ## v0.2.0 — Abacum tab title
 
 ### Included changes
