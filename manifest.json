@@ -44,6 +44,7 @@
   },
   "action": {
     "default_title": "AB-key",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
       "16": "assets/icons/ab-key.png",
       "32": "assets/icons/ab-key.png"

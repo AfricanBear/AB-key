@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A+B key</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="panel">
+      <header class="panel-header">
+        <h1>A+B key</h1>
+        <p class="subtitle">Abacum hotkeys</p>
+      </header>
+
+      <section class="bindings">
+        <h2 class="section-label">Hotkeys</h2>
+        <ul id="hotkeyList" class="hotkey-list"></ul>
+        <p id="emptyState" class="empty-state" hidden>No hotkeys configured.</p>
+      </section>
+
+      <footer class="panel-footer">
+        <a id="optionsLink" href="#">Options</a>
+      </footer>
+    </div>
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
