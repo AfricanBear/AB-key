@@ -1,5 +1,18 @@
 # Release Notes
 
+## v0.4.1 — Options layout
+
+### Included changes
+
+- **Save** moved to the header (top right).
+- **Reload**, **Export**, and **Import** moved into a toolbar inside the Configuration card.
+
+### Upgrade
+
+- Reload the extension after updating.
+
+---
+
 ## v0.4.0 — Light theme nav for Abacum
 
 ### Included changes

@@ -16,6 +16,7 @@
             <p class="subtitle">Configure command bindings and action profiles</p>
           </div>
         </div>
+        <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
       </header>
 
       <section class="card">
@@ -52,17 +53,17 @@
         </div>
       </section>
 
-      <section class="card">
-        <h2 class="section-label">Configuration</h2>
+      <section class="card card-config">
+        <div class="card-toolbar">
+          <h2 class="section-label">Configuration</h2>
+          <div class="toolbar" role="toolbar" aria-label="Configuration actions">
+            <button type="button" id="reloadBtn" class="btn btn-toolbar">Reload</button>
+            <button type="button" id="exportBtn" class="btn btn-toolbar">Export</button>
+            <button type="button" id="importBtn" class="btn btn-toolbar">Import</button>
+          </div>
+        </div>
         <label class="field-label" for="configJson">JSON</label>
         <textarea id="configJson" spellcheck="false"></textarea>
-      </section>
-
-      <section class="controls">
-        <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
-        <button type="button" id="reloadBtn" class="btn">Reload</button>
-        <button type="button" id="exportBtn" class="btn">Export</button>
-        <button type="button" id="importBtn" class="btn">Import</button>
       </section>
 
       <pre id="status" class="status" role="status"></pre>

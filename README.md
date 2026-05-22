@@ -84,6 +84,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.4.1
+
+- Options layout: Save in header; Reload, Export, Import in Configuration toolbar.
+
 ### v0.4.0
 
 - **Light theme nav** for `*.abacum.io`: optional drawer and nav styling from options.
