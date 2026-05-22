@@ -84,6 +84,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.3.0
+
+- Options page redesigned with dark glassmorphism styling and extension logo in the header.
+
 ### v0.2.2
 
 - Toolbar popup from the extension icon shows Abacum hotkeys (short label + key binding).

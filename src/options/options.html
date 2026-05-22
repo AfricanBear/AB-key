@@ -7,37 +7,48 @@
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <main>
-      <h1>A+B key</h1>
-      <p>Configure command bindings and action profiles.</p>
+    <main class="page">
+      <header class="page-header">
+        <div class="brand">
+          <img id="brandLogo" class="brand-logo" alt="A+B key" width="40" height="40" />
+          <div class="brand-text">
+            <h1>A+B key</h1>
+            <p class="subtitle">Configure command bindings and action profiles</p>
+          </div>
+        </div>
+      </header>
 
-      <section>
-        <label for="configJson">Configuration JSON</label>
+      <section class="card">
+        <h2 class="section-label">Features</h2>
+        <div class="feature-toggles">
+          <label class="toggle-row">
+            <input type="checkbox" id="abacumTabTitleEnabled" />
+            <span class="toggle-text">Abacum: show client name in tab title</span>
+          </label>
+          <p class="hint">Open Abacum tabs may need to be refreshed for this setting to take effect.</p>
+
+          <label class="toggle-row">
+            <input type="checkbox" id="diagnosticsEnabled" />
+            <span class="toggle-text">Enable diagnostics logging</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 class="section-label">Configuration</h2>
+        <label class="field-label" for="configJson">JSON</label>
         <textarea id="configJson" spellcheck="false"></textarea>
       </section>
 
       <section class="controls">
-        <button id="reloadBtn">Reload</button>
-        <button id="saveBtn">Save</button>
-        <button id="exportBtn">Export</button>
-        <button id="importBtn">Import</button>
+        <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
+        <button type="button" id="reloadBtn" class="btn">Reload</button>
+        <button type="button" id="exportBtn" class="btn">Export</button>
+        <button type="button" id="importBtn" class="btn">Import</button>
       </section>
 
-      <section class="feature-toggles">
-        <label>
-          <input type="checkbox" id="abacumTabTitleEnabled" />
-          Abacum: show client name in tab title
-        </label>
-        <p class="hint">Open Abacum tabs may need to be refreshed for this setting to take effect.</p>
-
-        <label>
-          <input type="checkbox" id="diagnosticsEnabled" />
-          Enable diagnostics logging
-        </label>
-      </section>
-
-      <pre id="status"></pre>
+      <pre id="status" class="status" role="status"></pre>
     </main>
     <script type="module" src="options.js"></script>
   </body>
-  </html>
+</html>

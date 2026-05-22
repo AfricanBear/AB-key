@@ -4,10 +4,20 @@ const configText = document.getElementById("configJson");
 const statusEl = document.getElementById("status");
 const diagnosticsToggle = document.getElementById("diagnosticsEnabled");
 const abacumTabTitleToggle = document.getElementById("abacumTabTitleEnabled");
+const brandLogo = document.getElementById("brandLogo");
+
+if (brandLogo) {
+  brandLogo.src = chrome.runtime.getURL("assets/icons/ab-key.png");
+}
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
-  statusEl.style.color = isError ? "#b12727" : "#1f2d3d";
+  statusEl.classList.remove("is-error", "is-info");
+  if (isError) {
+    statusEl.classList.add("is-error");
+  } else if (message.includes("imported") || message.includes("Review")) {
+    statusEl.classList.add("is-info");
+  }
 }
 
 async function loadConfig() {

@@ -1,5 +1,18 @@
 # Release Notes
 
+## v0.3.0 — Options UI redesign
+
+### Included changes
+
+- Options page restyled with dark glassmorphism theme (aligned with Abacum reference and toolbar popup).
+- Extension icon shown in the options header.
+
+### Upgrade
+
+- Reload the extension after updating.
+
+---
+
 ## v0.2.2 — Toolbar hotkey popup
 
 ### Included changes
