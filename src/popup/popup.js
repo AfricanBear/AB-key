@@ -4,8 +4,17 @@ const hotkeyList = document.getElementById("hotkeyList");
 const emptyState = document.getElementById("emptyState");
 const optionsLink = document.getElementById("optionsLink");
 
+const POPUP_LABEL_OVERRIDES = {
+  "action.bulkDimensions": "Edit Dimensions",
+  "action.addCreate": "Context: Add + Create variable"
+};
+
 function shortLabel(action) {
-  if (!action?.label) return "Action";
+  if (!action) return "Action";
+  if (POPUP_LABEL_OVERRIDES[action.actionId]) {
+    return POPUP_LABEL_OVERRIDES[action.actionId];
+  }
+  if (!action.label) return "Action";
   const trimmed = action.label.replace(/^Open\s+/i, "").trim();
   return trimmed.split(/\s+/).slice(0, 2).join(" ");
 }

@@ -84,6 +84,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.3.1
+
+- Popup hotkey labels updated: Edit Dimensions, Context: Add + Create variable.
+
 ### v0.3.0
 
 - Options page redesigned with dark glassmorphism styling and extension logo in the header.

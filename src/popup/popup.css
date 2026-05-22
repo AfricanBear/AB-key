@@ -17,8 +17,8 @@ html,
 body {
   margin: 0;
   padding: 0;
-  min-width: 276px;
-  max-width: 300px;
+  min-width: 300px;
+  max-width: 340px;
   overflow: hidden;
   background: var(--panel-bg);
   border-radius: 12px;
@@ -92,12 +92,12 @@ body {
 }
 
 .hotkey-label {
-  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
 }
 
 .hotkey-kbd {

@@ -1,5 +1,18 @@
 # Release Notes
 
+## v0.3.1 — Popup label updates
+
+### Included changes
+
+- Popup labels: “Bulk Dimensions” → “Edit Dimensions”; “Add then” → “Context: Add + Create variable”.
+- Popup width adjusted for longer labels.
+
+### Upgrade
+
+- Reload the extension after updating.
+
+---
+
 ## v0.3.0 — Options UI redesign
 
 ### Included changes
