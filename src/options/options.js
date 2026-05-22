@@ -4,10 +4,22 @@ const configText = document.getElementById("configJson");
 const statusEl = document.getElementById("status");
 const diagnosticsToggle = document.getElementById("diagnosticsEnabled");
 const abacumTabTitleToggle = document.getElementById("abacumTabTitleEnabled");
+const lightThemeNavToggle = document.getElementById("lightThemeNavEnabled");
 const brandLogo = document.getElementById("brandLogo");
 
 if (brandLogo) {
   brandLogo.src = chrome.runtime.getURL("assets/icons/ab-key.png");
+}
+
+const lightNavPreviewDefault = document.getElementById("lightNavPreviewDefault");
+const lightNavPreviewLight = document.getElementById("lightNavPreviewLight");
+if (lightNavPreviewDefault) {
+  lightNavPreviewDefault.src = chrome.runtime.getURL("assets/options/light-nav-default.png");
+  lightNavPreviewDefault.alt = "Default nav icon";
+}
+if (lightNavPreviewLight) {
+  lightNavPreviewLight.src = chrome.runtime.getURL("assets/options/light-nav-light.png");
+  lightNavPreviewLight.alt = "Light theme nav icon";
 }
 
 function setStatus(message, isError = false) {
@@ -25,6 +37,7 @@ async function loadConfig() {
   const config = migrateConfig(raw[CONFIG_KEY]);
   diagnosticsToggle.checked = Boolean(config.diagnosticsEnabled);
   abacumTabTitleToggle.checked = config.abacumTabTitleEnabled !== false;
+  lightThemeNavToggle.checked = Boolean(config.lightThemeNavEnabled);
   configText.value = JSON.stringify(config, null, 2);
   setStatus("Configuration loaded.");
 }
@@ -34,6 +47,7 @@ async function saveConfig() {
     const parsed = JSON.parse(configText.value);
     parsed.diagnosticsEnabled = diagnosticsToggle.checked;
     parsed.abacumTabTitleEnabled = abacumTabTitleToggle.checked;
+    parsed.lightThemeNavEnabled = lightThemeNavToggle.checked;
     validateConfigShape(parsed);
     await chrome.storage.local.set({ [CONFIG_KEY]: parsed });
     setStatus("Configuration saved.");

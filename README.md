@@ -84,6 +84,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.4.0
+
+- **Light theme nav** for `*.abacum.io`: optional drawer and nav styling from options.
+- Preview images in options show default vs light nav icon appearance.
+
 ### v0.3.1
 
 - Popup hotkey labels updated: Edit Dimensions, Context: Add + Create variable.

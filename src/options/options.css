@@ -142,6 +142,43 @@ textarea::placeholder {
   gap: 4px;
 }
 
+.toggle-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 4px 0;
+}
+
+.toggle-preview {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.preview-item {
+  margin: 0;
+  text-align: center;
+}
+
+.preview-img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  object-fit: contain;
+}
+
+.preview-item figcaption {
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .toggle-row {
   display: flex;
   align-items: flex-start;
@@ -179,6 +216,12 @@ textarea::placeholder {
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.45;
+}
+
+.hint code {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 
 .controls {

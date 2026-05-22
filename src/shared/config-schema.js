@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
   diagnosticsEnabled: false,
   abacumTabTitleEnabled: true,
+  lightThemeNavEnabled: false,
   commandBindings: {
     run_primary_action: "action.primary",
     run_secondary_action: "action.secondary"
@@ -180,6 +181,9 @@ export function migrateConfig(rawConfig) {
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") {
     next = { ...next, abacumTabTitleEnabled: DEFAULT_CONFIG.abacumTabTitleEnabled };
+  }
+  if (typeof next.lightThemeNavEnabled !== "boolean") {
+    next = { ...next, lightThemeNavEnabled: DEFAULT_CONFIG.lightThemeNavEnabled };
   }
   validateConfigShape(next);
   return next;

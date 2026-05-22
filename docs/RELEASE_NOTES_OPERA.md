@@ -1,5 +1,19 @@
 # Release Notes
 
+## v0.4.0 — Light theme nav for Abacum
+
+### Included changes
+
+- **Light theme nav** toggle in options; injects styles on all `*.abacum.io` pages.
+- Drawer gradient, white nav accents (`.css-s8husd`, `.css-s9zrci`), lavender active state (`.css-s7gj1v`).
+- Options preview images (default vs light nav) beside the toggle.
+
+### Upgrade
+
+- Reload the extension, enable the toggle in options, and refresh Abacum tabs.
+
+---
+
 ## v0.3.1 — Popup label updates
 
 ### Included changes

@@ -6,7 +6,7 @@ Last updated: 2026-05-19
 
 - Repository: `https://github.com/AfricanBear/AB-key`
 - Default branch: `main`
-- Latest release tag: `v0.3.1`
+- Latest release tag: `v0.4.0`
 - Packaging outputs:
   - `dist/AB-key.zip`
   - `dist/AB-key-opera.zip`
@@ -57,7 +57,7 @@ Last updated: 2026-05-19
 - Initial commit created and pushed to GitHub.
 - Remote configured to:
   - `origin https://github.com/AfricanBear/AB-key.git`
-- Release tags `v0.1.0` through `v0.3.1` created and pushed.
+- Release tags `v0.1.0` through `v0.4.0` created and pushed.
 
 ### Abacum tab title (v0.2.0 / v0.2.1)
 
@@ -72,11 +72,15 @@ Last updated: 2026-05-19
 
 - Glassmorphism options page; extension logo in header.
 
+### Light theme nav (v0.4.0)
+
+- `src/content/abacum-light-nav.js` on `*.abacum.io`; options toggle and preview images.
+
 ## Important Paths
 
 - Manifest: `manifest.json`
 - Background worker: `src/background/service-worker.js`
-- Content scripts: `src/content/content-script.js`, `src/content/abacum-tab-title.js`
+- Content scripts: `src/content/content-script.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`
 - Config schema: `src/shared/config-schema.js`
 - Options UI: `src/options/options.html`, `src/options/options.js`
 - Popup UI: `src/popup/popup.html`, `src/popup/popup.js`, `src/popup/popup.css`

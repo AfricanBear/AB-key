@@ -27,6 +27,24 @@
           </label>
           <p class="hint">Open Abacum tabs may need to be refreshed for this setting to take effect.</p>
 
+          <div class="toggle-block">
+            <label class="toggle-row">
+              <input type="checkbox" id="lightThemeNavEnabled" />
+              <span class="toggle-text">Light theme nav</span>
+            </label>
+            <div class="toggle-preview" aria-hidden="true">
+              <figure class="preview-item">
+                <img id="lightNavPreviewDefault" class="preview-img" alt="" width="36" height="36" />
+                <figcaption>Default</figcaption>
+              </figure>
+              <figure class="preview-item">
+                <img id="lightNavPreviewLight" class="preview-img" alt="" width="36" height="36" />
+                <figcaption>Light nav</figcaption>
+              </figure>
+            </div>
+          </div>
+          <p class="hint">Applies to all <code>*.abacum.io</code> pages. Refresh if the nav does not update immediately.</p>
+
           <label class="toggle-row">
             <input type="checkbox" id="diagnosticsEnabled" />
             <span class="toggle-text">Enable diagnostics logging</span>
