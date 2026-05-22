@@ -1,5 +1,18 @@
 # Release Notes
 
+## v0.2.2 — Toolbar hotkey popup
+
+### Included changes
+
+- Added toolbar popup (`default_popup`) listing Abacum hotkeys with short labels and key bindings.
+- Dark glass-style panel opened from the extension icon.
+
+### Upgrade
+
+- Reload the extension after updating.
+
+---
+
 ## v0.2.1 — Options and tab title toggle
 
 ### Included changes

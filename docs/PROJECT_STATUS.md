@@ -6,7 +6,7 @@ Last updated: 2026-05-19
 
 - Repository: `https://github.com/AfricanBear/AB-key`
 - Default branch: `main`
-- Latest release tag: `v0.2.1`
+- Latest release tag: `v0.2.2`
 - Packaging outputs:
   - `dist/AB-key.zip`
   - `dist/AB-key-opera.zip`
@@ -57,12 +57,16 @@ Last updated: 2026-05-19
 - Initial commit created and pushed to GitHub.
 - Remote configured to:
   - `origin https://github.com/AfricanBear/AB-key.git`
-- Release tags `v0.1.0`, `v0.2.0`, and `v0.2.1` created and pushed.
+- Release tags `v0.1.0` through `v0.2.2` created and pushed.
 
 ### Abacum tab title (v0.2.0 / v0.2.1)
 
 - Content script `src/content/abacum-tab-title.js` for `app.abacum.io`.
 - v0.2.1: options toggle `abacumTabTitleEnabled`; options UI branded **A+B key**.
+
+### Toolbar popup (v0.2.2)
+
+- `src/popup/` hotkey reference panel via `default_popup`.
 
 ## Important Paths
 
@@ -71,6 +75,7 @@ Last updated: 2026-05-19
 - Content scripts: `src/content/content-script.js`, `src/content/abacum-tab-title.js`
 - Config schema: `src/shared/config-schema.js`
 - Options UI: `src/options/options.html`, `src/options/options.js`
+- Popup UI: `src/popup/popup.html`, `src/popup/popup.js`, `src/popup/popup.css`
 - Packaging scripts: `scripts/package.ps1`, `scripts/validate.ps1`
 - Core docs:
   - `README.md`

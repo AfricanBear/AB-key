@@ -84,6 +84,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.2.2
+
+- Toolbar popup from the extension icon shows Abacum hotkeys (short label + key binding).
+- Dark glass-style popup panel.
+
 ### v0.2.1
 
 - Abacum tab title can be turned on or off in the **A+B key** options page (`abacumTabTitleEnabled`).
