@@ -3,6 +3,31 @@ import { ErrorCode, ExtensionError } from "./errors.js";
 export const CURRENT_CONFIG_VERSION = 1;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
+const TOOLBAR_CONTAINER_SELECTORS = [
+  ".MuiDrawer-root .MuiGrid-container",
+  ".MuiGrid-root.MuiGrid-container.css-1c87emg"
+];
+
+const TOOLBAR_RAIL_ACTION_IDS = [
+  "action.info",
+  "action.dimensions",
+  "action.settings",
+  "action.activity",
+  "action.toolbar5"
+];
+
+function makeToolbarIndex(childIndex) {
+  return {
+    containerSelectors: TOOLBAR_CONTAINER_SELECTORS,
+    childIndex
+  };
+}
+
+const DEFAULT_TOOLBAR_EXECUTION_POLICY = {
+  timeoutMs: 2000,
+  retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true }
+};
+
 export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
   diagnosticsEnabled: false,
@@ -17,6 +42,7 @@ export const DEFAULT_CONFIG = {
     { key: "alt+2", actionId: "action.dimensions", hosts: ["app.abacum.io"] },
     { key: "alt+3", actionId: "action.settings", hosts: ["app.abacum.io"] },
     { key: "alt+4", actionId: "action.activity", hosts: ["app.abacum.io"] },
+    { key: "alt+5", actionId: "action.toolbar5", hosts: ["app.abacum.io"] },
     { key: "alt+e", actionId: "action.bulkDimensions", hosts: ["app.abacum.io"] },
     { key: "alt+s", actionId: "action.save", hosts: ["app.abacum.io"] },
     { key: "alt+a", actionId: "action.addCreate", hosts: ["app.abacum.io"] },
@@ -46,10 +72,11 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
+        toolbarIndex: makeToolbarIndex(1),
         selectorCandidates: [".MuiIconButton-root[aria-label='Info']"],
         ariaCriteria: { label: "Info", role: "button", caseSensitive: false }
       },
-      executionPolicy: { timeoutMs: 2000, retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true } }
+      executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
     {
       actionId: "action.dimensions",
@@ -57,10 +84,11 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
+        toolbarIndex: makeToolbarIndex(2),
         selectorCandidates: [".MuiIconButton-root[aria-label='Dimensions']"],
         ariaCriteria: { label: "Dimensions", role: "button", caseSensitive: false }
       },
-      executionPolicy: { timeoutMs: 2000, retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true } }
+      executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
     {
       actionId: "action.settings",
@@ -68,10 +96,11 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
+        toolbarIndex: makeToolbarIndex(3),
         selectorCandidates: [".MuiIconButton-root[aria-label='Settings']"],
         ariaCriteria: { label: "Settings", role: "button", caseSensitive: false }
       },
-      executionPolicy: { timeoutMs: 2000, retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true } }
+      executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
     {
       actionId: "action.activity",
@@ -79,10 +108,21 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
+        toolbarIndex: makeToolbarIndex(4),
         selectorCandidates: [".MuiIconButton-root[aria-label='Activity']"],
         ariaCriteria: { label: "Activity", role: "button", caseSensitive: false }
       },
-      executionPolicy: { timeoutMs: 2000, retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true } }
+      executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
+    },
+    {
+      actionId: "action.toolbar5",
+      label: "Toolbar 5",
+      enabled: true,
+      scope: { hosts: ["app.abacum.io"] },
+      locatorProfile: {
+        toolbarIndex: makeToolbarIndex(5)
+      },
+      executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
     {
       actionId: "action.bulkDimensions",
@@ -185,6 +225,35 @@ export function migrateConfig(rawConfig) {
   if (typeof next.lightThemeNavEnabled !== "boolean") {
     next = { ...next, lightThemeNavEnabled: DEFAULT_CONFIG.lightThemeNavEnabled };
   }
+  next = mergeToolbarDefaults(next);
   validateConfigShape(next);
   return next;
+}
+
+function mergeToolbarDefaults(config) {
+  const defaultById = new Map(DEFAULT_CONFIG.actions.map((action) => [action.actionId, action]));
+  const merged = { ...config, actions: [...config.actions], hotkeys: [...(config.hotkeys || [])] };
+
+  merged.actions = merged.actions.map((action) => {
+    if (!TOOLBAR_RAIL_ACTION_IDS.includes(action.actionId)) return action;
+    const fallback = defaultById.get(action.actionId);
+    if (!fallback?.locatorProfile?.toolbarIndex || action.locatorProfile?.toolbarIndex) return action;
+    return {
+      ...action,
+      locatorProfile: {
+        ...action.locatorProfile,
+        toolbarIndex: fallback.locatorProfile.toolbarIndex
+      }
+    };
+  });
+
+  if (!merged.actions.some((action) => action.actionId === "action.toolbar5")) {
+    merged.actions.push(defaultById.get("action.toolbar5"));
+  }
+
+  if (!merged.hotkeys.some((hotkey) => hotkey.key === "alt+5")) {
+    merged.hotkeys.push({ key: "alt+5", actionId: "action.toolbar5", hosts: ["app.abacum.io"] });
+  }
+
+  return merged;
 }

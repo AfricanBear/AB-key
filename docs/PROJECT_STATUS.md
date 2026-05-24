@@ -6,7 +6,7 @@ Last updated: 2026-05-19
 
 - Repository: `https://github.com/AfricanBear/AB-key`
 - Default branch: `main`
-- Latest release tag: `v0.4.1`
+- Latest release tag: `v0.5.0`
 - Packaging outputs:
   - `dist/AB-key.zip`
   - `dist/AB-key-opera.zip`
@@ -57,7 +57,7 @@ Last updated: 2026-05-19
 - Initial commit created and pushed to GitHub.
 - Remote configured to:
   - `origin https://github.com/AfricanBear/AB-key.git`
-- Release tags `v0.1.0` through `v0.4.1` created and pushed.
+- Release tags `v0.1.0` through `v0.5.0` created and pushed.
 
 ### Abacum tab title (v0.2.0 / v0.2.1)
 
@@ -75,6 +75,10 @@ Last updated: 2026-05-19
 ### Light theme nav (v0.4.0)
 
 - `src/content/abacum-light-nav.js` on `*.abacum.io`; options toggle and preview images.
+
+### Index toolbar hotkeys (v0.5.0)
+
+- `toolbarIndex` locator for Alt+1–5 on Abacum side rail; aria fallback for 1–4.
 
 ## Important Paths
 

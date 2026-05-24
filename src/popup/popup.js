@@ -6,7 +6,8 @@ const optionsLink = document.getElementById("optionsLink");
 
 const POPUP_LABEL_OVERRIDES = {
   "action.bulkDimensions": "Edit Dimensions",
-  "action.addCreate": "Context: Add + Create variable"
+  "action.addCreate": "Context: Add + Create variable",
+  "action.toolbar5": "Panel 5"
 };
 
 function shortLabel(action) {

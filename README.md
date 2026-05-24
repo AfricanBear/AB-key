@@ -84,6 +84,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.5.0
+
+- Alt+1–5 click the Abacum toolbar by index; Alt+1–4 fall back to aria labels.
+- Alt+5 added for the fifth rail button.
+
 ### v0.4.1
 
 - Options layout: Save in header; Reload, Export, Import in Configuration toolbar.

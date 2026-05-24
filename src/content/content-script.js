@@ -96,6 +96,24 @@
     return [...new Set(elements)];
   }
 
+  function resolveToolbarIndexElement(locatorProfile) {
+    const toolbarIndex = locatorProfile?.toolbarIndex;
+    if (!toolbarIndex || typeof toolbarIndex.childIndex !== "number") return null;
+
+    const selectors = toolbarIndex.containerSelectors || [];
+    for (const selector of selectors) {
+      try {
+        const container = document.querySelector(selector);
+        if (!container) continue;
+        const button = container.querySelector(`> :nth-child(${toolbarIndex.childIndex}) button`);
+        if (button) return button;
+      } catch {
+        // Ignore malformed selectors and continue fallback chain.
+      }
+    }
+    return null;
+  }
+
   function collectCandidates(locatorProfile) {
     const candidates = [];
     const selectorCandidates = locatorProfile.selectorCandidates || [];
@@ -118,7 +136,14 @@
     }));
   }
 
-  function selectBestCandidate(locatorProfile) {
+  function selectBestCandidate(locatorProfile, options = {}) {
+    if (!options.skipToolbar) {
+      const toolbarElement = resolveToolbarIndexElement(locatorProfile);
+      if (toolbarElement) {
+        return { element: toolbarElement, score: 1000, strategyTag: "toolbar" };
+      }
+    }
+
     const scored = collectCandidates(locatorProfile).sort((a, b) => b.score - a.score);
     if (!scored.length) return null;
     if (typeof locatorProfile.indexHint === "number" && scored[locatorProfile.indexHint]) return scored[locatorProfile.indexHint];
@@ -223,8 +248,11 @@
     for (const step of steps) {
       let stepCompleted = false;
       for (let i = 0; i < attempts; i += 1) {
-        const candidate = selectBestCandidate(step.locatorProfile || profile);
-        if (candidate?.element) {
+        const stepProfile = step.locatorProfile || profile;
+        let candidate = selectBestCandidate(stepProfile);
+        let triedToolbarFallback = false;
+
+        while (candidate?.element) {
           if (diagnosticsEnabled) showDebugOutline(candidate.element);
           const clickResult = clickElement(candidate.element);
           if (clickResult.ok) {
@@ -232,8 +260,19 @@
             break;
           }
           lastError = clickResult.error;
-        } else {
+          if (stepProfile.toolbarIndex && !triedToolbarFallback) {
+            triedToolbarFallback = true;
+            candidate = selectBestCandidate(stepProfile, { skipToolbar: true });
+            continue;
+          }
+          break;
+        }
+
+        if (!candidate?.element) {
           lastError = { code: ErrorCode.ElementNotFound, message: "No matching element found." };
+        }
+        if (stepCompleted) {
+          break;
         }
         if (Date.now() >= deadline) {
           break;
@@ -269,6 +308,8 @@
   }
 
   async function handleCustomHotkeys(event) {
+    if (event.repeat) return;
+
     const hotkey = normalizeHotkey(event);
     const host = window.location.hostname;
     const configData = await chrome.storage.local.get(CONFIG_KEY);

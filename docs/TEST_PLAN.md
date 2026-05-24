@@ -23,6 +23,14 @@
 - Aria-only icon button.
 - Multiple matching elements with index hint.
 - Overlay-blocked element yields `OverlayBlocked`.
+- Abacum toolbar rail (Alt+1–5):
+  - Alt+1 opens Info panel.
+  - Alt+2 opens Dimensions panel.
+  - Alt+3 opens Settings panel.
+  - Alt+4 opens Activity panel.
+  - Alt+5 clicks fifth rail button (index-only; aria label TBD).
+  - Held key does not repeat-trigger actions.
+  - Alt+E/S/A/C still use semantic locators (no regression).
 
 ## Performance Gates
 

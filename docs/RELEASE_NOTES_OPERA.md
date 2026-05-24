@@ -1,5 +1,20 @@
 # Release Notes
 
+## v0.5.0 — Index-based toolbar hotkeys
+
+### Included changes
+
+- Alt+1–5 use **toolbar index** targeting for the Abacum side icon rail (`container + nth-child`).
+- Alt+1–4 keep **aria-label fallback** if index click fails.
+- Alt+5 added for the fifth rail button (index-only; aria label unknown).
+- Key repeat ignored on hotkey handler (`event.repeat`).
+
+### Upgrade
+
+- Reload the extension after updating. Existing configs migrate automatically.
+
+---
+
 ## v0.4.1 — Options layout
 
 ### Included changes

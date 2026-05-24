@@ -25,6 +25,13 @@ Use this snippet to add new automation tasks without touching core runtime code.
       "role": "button",
       "caseSensitive": false
     },
+    "toolbarIndex": {
+      "containerSelectors": [
+        ".MuiDrawer-root .MuiGrid-container",
+        ".MuiGrid-root.MuiGrid-container.css-1c87emg"
+      ],
+      "childIndex": 1
+    },
     "indexHint": 0
   },
   "executionPolicy": {
