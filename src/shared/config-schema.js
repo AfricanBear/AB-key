@@ -19,7 +19,8 @@ const TOOLBAR_RAIL_ACTION_IDS = [
 function makeToolbarIndex(childIndex) {
   return {
     containerSelectors: TOOLBAR_CONTAINER_SELECTORS,
-    childIndex
+    childIndex,
+    indexOnly: true
   };
 }
 
@@ -72,9 +73,7 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
-        toolbarIndex: makeToolbarIndex(1),
-        selectorCandidates: [".MuiIconButton-root[aria-label='Info']"],
-        ariaCriteria: { label: "Info", role: "button", caseSensitive: false }
+        toolbarIndex: makeToolbarIndex(1)
       },
       executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
@@ -84,9 +83,7 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
-        toolbarIndex: makeToolbarIndex(2),
-        selectorCandidates: [".MuiIconButton-root[aria-label='Dimensions']"],
-        ariaCriteria: { label: "Dimensions", role: "button", caseSensitive: false }
+        toolbarIndex: makeToolbarIndex(2)
       },
       executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
@@ -96,9 +93,7 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
-        toolbarIndex: makeToolbarIndex(3),
-        selectorCandidates: [".MuiIconButton-root[aria-label='Settings']"],
-        ariaCriteria: { label: "Settings", role: "button", caseSensitive: false }
+        toolbarIndex: makeToolbarIndex(3)
       },
       executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
@@ -108,9 +103,7 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: ["app.abacum.io"] },
       locatorProfile: {
-        toolbarIndex: makeToolbarIndex(4),
-        selectorCandidates: [".MuiIconButton-root[aria-label='Activity']"],
-        ariaCriteria: { label: "Activity", role: "button", caseSensitive: false }
+        toolbarIndex: makeToolbarIndex(4)
       },
       executionPolicy: { ...DEFAULT_TOOLBAR_EXECUTION_POLICY }
     },
@@ -237,12 +230,20 @@ function mergeToolbarDefaults(config) {
   merged.actions = merged.actions.map((action) => {
     if (!TOOLBAR_RAIL_ACTION_IDS.includes(action.actionId)) return action;
     const fallback = defaultById.get(action.actionId);
-    if (!fallback?.locatorProfile?.toolbarIndex || action.locatorProfile?.toolbarIndex) return action;
+    if (!fallback?.locatorProfile?.toolbarIndex) return action;
+
+    const existing = action.locatorProfile || {};
+    const toolbarIndex = {
+      ...fallback.locatorProfile.toolbarIndex,
+      ...(existing.toolbarIndex || {}),
+      indexOnly: existing.toolbarIndex?.indexOnly !== false
+    };
+    const { selectorCandidates: _s, ariaCriteria: _a, textCriteria: _t, ...restProfile } = existing;
     return {
       ...action,
       locatorProfile: {
-        ...action.locatorProfile,
-        toolbarIndex: fallback.locatorProfile.toolbarIndex
+        ...restProfile,
+        toolbarIndex
       }
     };
   });

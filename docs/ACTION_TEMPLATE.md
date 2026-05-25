@@ -30,7 +30,8 @@ Use this snippet to add new automation tasks without touching core runtime code.
         ".MuiDrawer-root .MuiGrid-container",
         ".MuiGrid-root.MuiGrid-container.css-1c87emg"
       ],
-      "childIndex": 1
+      "childIndex": 1,
+      "indexOnly": true
     },
     "indexHint": 0
   },
