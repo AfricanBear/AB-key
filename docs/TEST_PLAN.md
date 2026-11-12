@@ -34,6 +34,9 @@
   - Held key does not repeat-trigger actions.
   - A+B key panel lists the rail labels of the current page.
   - Alt+E/S/A/C behave as before (no regression).
+- Alt+E (Edit Dimensions, Models builder):
+  - With the variable's dimensions button visible: opens the dimensions modal (`module-builder-dbv-modal`).
+  - Without that button on the page (or while the modal is open): nothing is clicked — in particular not "Show Builder Formulas".
 - Extension reload / update keeps the saved configuration (not reset to defaults).
 
 ## Performance Gates
