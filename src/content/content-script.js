@@ -174,10 +174,18 @@
         // Ignore malformed selectors and continue the fallback chain.
       }
     }
-    const broadPool = document.querySelectorAll("button, a, [role='button'], [role='menuitem'], input, div, span");
-    for (const node of broadPool) {
-      if (matchesText(node, locatorProfile.textCriteria)) raw.push({ element: node, strategyTag: "text" });
-      else if (matchesAria(node, locatorProfile.ariaCriteria)) raw.push({ element: node, strategyTag: "aria" });
+    // Text / aria only add candidates when they identify something specific. A bare role
+    // (e.g. { role: "button" } without a label) matches every button on the page, so it is
+    // used for scoring only — otherwise a selector miss clicked an arbitrary button
+    // (Alt+E hit "Show Builder Formulas").
+    const useText = Boolean(locatorProfile.textCriteria?.value);
+    const useAria = Boolean(locatorProfile.ariaCriteria?.label);
+    if (useText || useAria) {
+      const broadPool = document.querySelectorAll("button, a, [role='button'], [role='menuitem'], input, div, span");
+      for (const node of broadPool) {
+        if (useText && matchesText(node, locatorProfile.textCriteria)) raw.push({ element: node, strategyTag: "text" });
+        else if (useAria && matchesAria(node, locatorProfile.ariaCriteria)) raw.push({ element: node, strategyTag: "aria" });
+      }
     }
     const firstTag = new Map();
     for (const c of raw) if (!firstTag.has(c.element)) firstTag.set(c.element, c.strategyTag);

@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 2;
+export const CURRENT_CONFIG_VERSION = 3;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -33,6 +33,11 @@ function buildRailHotkey(position) {
 
 // v1 label-based rail actions, replaced by positional rail actions in v2.
 const LEGACY_RAIL_ACTION_IDS = ["action.info", "action.dimensions", "action.settings", "action.activity", "action.toolbar5"];
+
+// Alt+E: Abacum's "edit dimensions" button in the model builder. The data-testid is stable;
+// the MUI class is not, and a bare { role: "button" } matched any button on the page.
+const BULK_DIMENSIONS_SELECTOR = "[data-testid='testid-builder-bulk-dimensions']";
+const LEGACY_BULK_DIMENSIONS_SELECTOR = ".MuiIconButton-root[data-testid='testid-builder-bulk-dimensions']";
 
 export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
@@ -76,8 +81,7 @@ export const DEFAULT_CONFIG = {
       enabled: true,
       scope: { hosts: [...ABACUM_HOSTS] },
       locatorProfile: {
-        selectorCandidates: [".MuiIconButton-root[data-testid='testid-builder-bulk-dimensions']"],
-        ariaCriteria: { role: "button", caseSensitive: false }
+        selectorCandidates: [BULK_DIMENSIONS_SELECTOR]
       },
       executionPolicy: {
         timeoutMs: 2000,
@@ -205,6 +209,20 @@ function migrateV1ToV2(v1) {
   return next;
 }
 
+// v2 -> v3: Alt+E selector no longer depends on the MUI class and drops the role-only aria
+// criteria. Only touched if the user still has the shipped default selector.
+function migrateV2ToV3(v2) {
+  const next = structuredClone(v2);
+  const action = next.actions.find((item) => item.actionId === "action.bulkDimensions");
+  const profile = action?.locatorProfile;
+  if (profile?.selectorCandidates?.length === 1 && profile.selectorCandidates[0] === LEGACY_BULK_DIMENSIONS_SELECTOR) {
+    profile.selectorCandidates = [BULK_DIMENSIONS_SELECTOR];
+    if (profile.ariaCriteria && !profile.ariaCriteria.label) delete profile.ariaCriteria;
+  }
+  next.configVersion = 3;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -215,6 +233,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 2) {
     next = migrateV1ToV2(next);
+  }
+  if (version < 3) {
+    next = migrateV2ToV3(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;
