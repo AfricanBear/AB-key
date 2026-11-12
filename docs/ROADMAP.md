@@ -4,51 +4,6 @@ Planned features not yet shipped. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) f
 
 ---
 
-## Higher contrast model cells
-
-**Status:** Planned  
-**Target:** `*.abacum.io` (model / grid views)
-
-### Goal
-
-Improve readability of model cells by increasing visual separation from surrounding UI.
-
-### Proposed behavior
-
-When enabled, inject styles that set **opacity to `0.5`** on Abacum model cell classes:
-
-| Class | Rule |
-|-------|------|
-| `.css-kdwx3d` | `opacity: 0.5 !important;` |
-| `.css-fjadjf` | `opacity: 0.5 !important;` |
-
-Example CSS (implementation sketch):
-
-```css
-.css-kdwx3d,
-.css-fjadjf {
-  opacity: 0.5 !important;
-}
-```
-
-### Implementation notes (when built)
-
-- Follow the same pattern as **Light theme nav** (`src/content/abacum-light-nav.js`):
-  - Dedicated content script on `*://*.abacum.io/*`
-  - Options toggle (e.g. `higherContrastModelCellsEnabled`) in config schema and options page
-  - Inject/remove a `<style>` block on config change; re-check on SPA navigation if needed
-- Add manifest `content_scripts` entry and release notes entry on ship.
-- Verify on live Abacum model views; class hashes may change — document selectors in release notes.
-
-### Test plan (draft)
-
-- [ ] Toggle off: cells use default Abacum styling.
-- [ ] Toggle on: both classes render at 0.5 opacity on model grid.
-- [ ] Toggle persists across reload; refresh open tabs after change.
-- [ ] No conflict with light theme nav or hotkey automation.
-
----
-
 ## Dataset range selection sum tooltip
 
 **Status:** Planned  
@@ -140,8 +95,6 @@ Hints are appended outside the editor; CodeMirror resets position on each keystr
 - Toolbar rail: verify behaviour with a panel open and on a single version page (v0.6.0 checked only with panels closed)
 - Light theme nav and tab title still rely on hashed `css-*` classes / first `img[alt]`
 
-- Automated tests for selector engine and config migration
-- CI: manifest validation + packaging on push/PR
 - Shortkeys.txt import utility
 - Diagnostics panel in options
 - Narrow `host_permissions` from `<all_urls>` where possible

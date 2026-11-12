@@ -70,6 +70,16 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 - If automation fails on internal pages (`opera://*`), switch to a regular web page; content scripts are blocked on restricted pages.
 - If action fails due to selector timing, enable diagnostics in options and retry.
 
+## Tests
+
+Requires Node.js 22+. No dependencies to install.
+
+- `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
+- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+E / Alt+S / Alt+A, rail tooltip hints, and darker model values.
+- The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
+
+CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
+
 ## Packaging
 
 Run the PowerShell script:
@@ -83,6 +93,10 @@ For Opera-labeled packaging:
 - `./scripts/package.ps1 -Target opera`
 
 ## Releases
+
+### v0.7.0
+
+- **Darker values in model cells** (Options → Features, on by default). Abacum shows model values in grey (`rgb(82,82,82)`); the extension gives them the grid's own near-black text colour (`rgb(23,23,23)`). Anchored on `data-testid="value-cell"`, not on hashed classes; values or icons with their own colour keep it. Toggling applies to open tabs without reload.
 
 ### v0.6.5
 

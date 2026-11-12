@@ -180,18 +180,11 @@ textarea::placeholder {
   gap: 4px;
 }
 
-.toggle-block {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 16px;
-  padding: 4px 0;
-}
-
 .toggle-preview {
   display: flex;
   gap: 12px;
   margin-left: auto;
+  padding-left: 16px;
 }
 
 .preview-item {
@@ -242,6 +235,26 @@ textarea::placeholder {
   cursor: pointer;
 }
 
+.toggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.toggle-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.toggle-hint code {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 .toggle-text {
   font-size: 13px;
   font-weight: 500;
@@ -250,7 +263,7 @@ textarea::placeholder {
 }
 
 .hint {
-  margin: 0 0 8px 36px;
+  margin: 0 0 12px;
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.45;
