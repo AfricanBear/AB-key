@@ -118,11 +118,11 @@ Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
 ## Recommended Next Commit Targets
 
 1. Implement **Higher contrast model cells** (see roadmap).
-2. Add automated tests for selector engine and config migration logic.
-3. Add CI workflow (manifest validation + packaging checks on push/PR).
-4. Add import utility to ingest future `Shortkeys.txt` exports automatically.
-5. Improve diagnostics UI (view structured logs directly in options page).
-6. Add action validation helpers to catch malformed mapping definitions earlier.
+2. Add import utility to ingest future `Shortkeys.txt` exports automatically.
+3. Improve diagnostics UI (view structured logs directly in options page).
+4. Add action validation helpers to catch malformed mapping definitions earlier.
+
+Automated tests (`npm test`, `tests/`) and CI (`.github/workflows/ci.yml`) are in place: add a test with every change.
 
 ## Open Risks / Follow-ups
 

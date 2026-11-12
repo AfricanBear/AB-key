@@ -70,6 +70,16 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 - If automation fails on internal pages (`opera://*`), switch to a regular web page; content scripts are blocked on restricted pages.
 - If action fails due to selector timing, enable diagnostics in options and retry.
 
+## Tests
+
+Requires Node.js 22+. No dependencies to install.
+
+- `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
+- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+E / Alt+S / Alt+A, and rail tooltip hints.
+- The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
+
+CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
+
 ## Packaging
 
 Run the PowerShell script:

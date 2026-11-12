@@ -140,8 +140,6 @@ Hints are appended outside the editor; CodeMirror resets position on each keystr
 - Toolbar rail: verify behaviour with a panel open and on a single version page (v0.6.0 checked only with panels closed)
 - Light theme nav and tab title still rely on hashed `css-*` classes / first `img[alt]`
 
-- Automated tests for selector engine and config migration
-- CI: manifest validation + packaging on push/PR
 - Shortkeys.txt import utility
 - Diagnostics panel in options
 - Narrow `host_permissions` from `<all_urls>` where possible

@@ -1,0 +1,12 @@
+{
+  "name": "ab-key",
+  "private": true,
+  "description": "AB-key browser extension — tooling only (tests). The extension itself has no build step.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\""
+  }
+}

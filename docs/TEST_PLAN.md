@@ -2,6 +2,9 @@
 
 ## Unit Tests
 
+Automated: `npm test` (see `tests/`). Runs in CI on every push to `main` and every pull request.
+When changing the config schema, add a migration test to `tests/config-migration.test.mjs`.
+
 - Config migration:
   - missing config -> defaults.
   - old config version -> migrated config.
