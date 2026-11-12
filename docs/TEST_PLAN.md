@@ -30,6 +30,7 @@
   - Versions list: Alt+1 Activity.
   - Repeat the checks with a panel already open (rail must still resolve; pressing the same key toggles the panel).
   - AI agent button is never clicked.
+  - Hovering a rail button shows the tooltip with its hotkey, e.g. "Info · Alt+1" on Models, "Activity · Alt+5" on Datasets; the AI agent tooltip is unchanged.
   - Russian keyboard layout: Alt+1–5 and Alt+E/S/A still work.
   - Held key does not repeat-trigger actions.
   - A+B key panel lists the rail labels of the current page.
