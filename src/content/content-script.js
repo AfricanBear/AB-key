@@ -488,6 +488,91 @@
   window.addEventListener("keydown", onKeyDown, true);
 
   // ---------------------------------------------------------------------------
+  // Rail tooltip hotkey hints: "Info" -> "Info · Alt+1"
+  // ---------------------------------------------------------------------------
+  // Abacum shows a standard MUI tooltip (.MuiTooltip-popper[role=tooltip] > .MuiTooltip-tooltip)
+  // when a rail button is hovered. It has no aria link to the button, so the tooltip is matched
+  // by text: its text must equal the hovered button's label. While the pointer stays on the
+  // button we re-check a few times per second, because the tooltip appears after a delay and
+  // React may re-render its text.
+
+  const RAIL_BUTTON_SELECTOR = 'button[data-testid^="toolbar-rail-button-"]';
+  const HINT_ATTR = "data-ab-key-hotkey-hint";
+  const HINT_POLL_MS = 100;
+  const HINT_MAX_MS = 5000;
+  let hintTimer = null;
+
+  function formatHotkey(key) {
+    return key
+      .split("+")
+      .map((part) => (part.length === 1 ? part.toUpperCase() : part.charAt(0).toUpperCase() + part.slice(1)))
+      .join("+");
+  }
+
+  function hotkeyForRailPosition(position) {
+    const host = window.location.hostname;
+    for (const hotkey of config?.hotkeys || []) {
+      if (!hostAllowed(hotkey.hosts, host)) continue;
+      const action = findAction(hotkey.actionId);
+      if (action?.locatorProfile?.toolbarRail?.position === position) return formatHotkey(hotkey.key);
+    }
+    return null;
+  }
+
+  function railHintFor(button) {
+    const rail = globalThis.AbKeyToolbarRail;
+    if (!rail) return null;
+    const position = rail.listButtons().buttons.indexOf(button) + 1;
+    if (position < 1) return null; // e.g. the AI agent button, which is not numbered
+    const hotkey = hotkeyForRailPosition(position);
+    const label = rail.labelOf(button);
+    return hotkey && label ? { label, hotkey } : null;
+  }
+
+  function applyRailHint(hint) {
+    for (const popper of document.querySelectorAll("[role='tooltip']")) {
+      const target = popper.querySelector(".MuiTooltip-tooltip") || popper;
+      const existing = target.querySelector(`[${HINT_ATTR}]`);
+      const ownText = (target.textContent || "").replace(existing?.textContent || "", "").trim();
+      if (ownText !== hint.label) continue;
+      if (existing) {
+        if (existing.textContent !== ` · ${hint.hotkey}`) existing.textContent = ` · ${hint.hotkey}`;
+        continue;
+      }
+      const span = document.createElement("span");
+      span.setAttribute(HINT_ATTR, "true");
+      span.style.opacity = "0.75";
+      span.style.whiteSpace = "nowrap";
+      span.textContent = ` · ${hint.hotkey}`;
+      target.appendChild(span);
+    }
+  }
+
+  function stopRailHint() {
+    if (hintTimer) clearInterval(hintTimer);
+    hintTimer = null;
+  }
+
+  function onRailPointerOver(event) {
+    const button = event.target?.closest?.(RAIL_BUTTON_SELECTOR);
+    if (!button) return;
+    const hint = railHintFor(button);
+    stopRailHint();
+    if (!hint) return;
+    const startedAt = Date.now();
+    applyRailHint(hint);
+    hintTimer = setInterval(() => {
+      if (Date.now() - startedAt > HINT_MAX_MS || !button.isConnected || !button.matches(":hover")) {
+        stopRailHint();
+        return;
+      }
+      applyRailHint(hint);
+    }, HINT_POLL_MS);
+  }
+
+  document.addEventListener("pointerover", onRailPointerOver, true);
+
+  // ---------------------------------------------------------------------------
   // Messages from the service worker (chrome.commands path)
   // ---------------------------------------------------------------------------
 

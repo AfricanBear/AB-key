@@ -137,7 +137,6 @@ Hints are appended outside the editor; CodeMirror resets position on each keystr
 ## Backlog (ideas)
 
 - Toolbar rail: verify behaviour with a panel open and on a single version page (v0.6.0 checked only with panels closed)
-- Alt+A / Alt+C: restrict text matching to interactive elements to avoid wrong clicks
 - Light theme nav and tab title still rely on hashed `css-*` classes / first `img[alt]`
 
 - Automated tests for selector engine and config migration
