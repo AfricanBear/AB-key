@@ -30,10 +30,11 @@
   - Versions list: Alt+1 Activity.
   - Repeat the checks with a panel already open (rail must still resolve; pressing the same key toggles the panel).
   - AI agent button is never clicked.
-  - Russian keyboard layout: Alt+1–5 and Alt+E/S/A/C still work.
+  - Russian keyboard layout: Alt+1–5 and Alt+E/S/A still work.
   - Held key does not repeat-trigger actions.
   - A+B key panel lists the rail labels of the current page.
-  - Alt+E/S/A/C behave as before (no regression).
+  - Alt+E/S/A behave as before (no regression).
+  - Alt+C does nothing (removed in v0.6.3) and is not listed in the A+B key panel.
 - Alt+S:
   - Model builder with unsaved changes: clicks the builder Save button.
   - Dialog with a primary Save button open (e.g. dimensions modal): clicks Save in the dialog, not the builder Save behind it.

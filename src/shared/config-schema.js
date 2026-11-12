@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 4;
+export const CURRENT_CONFIG_VERSION = 5;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -104,8 +104,7 @@ export const DEFAULT_CONFIG = {
     ...RAIL_POSITIONS.map(buildRailHotkey),
     { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS] },
     { key: "alt+s", actionId: "action.save", hosts: [...ABACUM_HOSTS] },
-    { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS] },
-    { key: "alt+c", actionId: "action.createSection", hosts: [...ABACUM_HOSTS] }
+    { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS] }
   ],
   actions: [
     {
@@ -162,18 +161,6 @@ export const DEFAULT_CONFIG = {
         retryPolicy: { attempts: 10, intervalMs: 200, useMutationObserver: true },
         steps: structuredClone(ADD_CREATE_STEPS)
       }
-    },
-    {
-      actionId: "action.createSection",
-      label: "Create Section",
-      enabled: true,
-      scope: { hosts: [...ABACUM_HOSTS] },
-      locatorProfile: {
-        selectorCandidates: [".MuiMenu-list button"],
-        textCriteria: { mode: "exact", value: "Create section", caseSensitive: false },
-        ariaCriteria: { role: "button", caseSensitive: false }
-      },
-      executionPolicy: { timeoutMs: 3000, retryPolicy: { attempts: 8, intervalMs: 200, useMutationObserver: true } }
     }
   ]
 };
@@ -275,6 +262,18 @@ function migrateV3ToV4(v3) {
   return next;
 }
 
+// v4 -> v5: Alt+C ("Create section") is removed. Its action and every hotkey bound to it
+// are dropped; a user's own action on alt+c is kept.
+const REMOVED_ACTION_IDS = ["action.createSection"];
+
+function migrateV4ToV5(v4) {
+  const next = structuredClone(v4);
+  next.actions = next.actions.filter((action) => !REMOVED_ACTION_IDS.includes(action.actionId));
+  next.hotkeys = (next.hotkeys || []).filter((hotkey) => !REMOVED_ACTION_IDS.includes(hotkey.actionId));
+  next.configVersion = 5;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -291,6 +290,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 4) {
     next = migrateV3ToV4(next);
+  }
+  if (version < 5) {
+    next = migrateV4ToV5(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;
