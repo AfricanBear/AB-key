@@ -41,6 +41,10 @@
   - Dialog with a primary Save button open (e.g. dimensions modal): clicks Save in the dialog, not the builder Save behind it.
   - Other pages where Alt+S worked before: still works (fallback search).
 - Alt+A (hover a row so "+" is visible): opens the menu and clicks exactly "Create variable", never "Create group" / "Create section".
+- Model-only hotkeys (Alt+E, Alt+A):
+  - On `/app/modules*`: listed in the A+B key panel and working.
+  - On Datasets, Dimensions, Versions: not listed in the panel; pressing them does nothing.
+  - Alt+S and Alt+1–5 remain listed and working on all Abacum pages.
 - Alt+E (Edit Dimensions, Models builder):
   - With the variable's dimensions button visible: opens the dimensions modal (`module-builder-dbv-modal`).
   - Without that button on the page (or while the modal is open): nothing is clicked — in particular not "Show Builder Formulas".

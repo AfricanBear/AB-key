@@ -1,9 +1,13 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 5;
+export const CURRENT_CONFIG_VERSION = 6;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
+// Abacum model pages (https://app.abacum.io/app/modules*). Hotkeys with "paths" fire and are
+// listed in the A+B key panel only on pages whose pathname starts with one of the prefixes.
+const MODEL_PATHS = ["/app/modules"];
+const MODEL_ONLY_ACTION_IDS = ["action.bulkDimensions", "action.addCreate"];
 
 // Right toolbar rail (Alt+1–5). Buttons are addressed by position (top to bottom),
 // because the rail content differs by Abacum object type. See src/content/toolbar-rail.js.
@@ -102,9 +106,9 @@ export const DEFAULT_CONFIG = {
   },
   hotkeys: [
     ...RAIL_POSITIONS.map(buildRailHotkey),
-    { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS] },
+    { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
     { key: "alt+s", actionId: "action.save", hosts: [...ABACUM_HOSTS] },
-    { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS] }
+    { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }
   ],
   actions: [
     {
@@ -187,6 +191,9 @@ export function validateConfigShape(config) {
   for (const hotkey of config.hotkeys || []) {
     if (!hotkey?.key || !hotkey?.actionId) {
       throw new ExtensionError(ErrorCode.InvalidConfig, "Hotkey is missing key or actionId.", { hotkey });
+    }
+    if (hotkey.paths !== undefined && (!Array.isArray(hotkey.paths) || hotkey.paths.some((p) => typeof p !== "string"))) {
+      throw new ExtensionError(ErrorCode.InvalidConfig, "Hotkey paths must be an array of strings.", { hotkey });
     }
   }
 }
@@ -274,6 +281,19 @@ function migrateV4ToV5(v4) {
   return next;
 }
 
+// v5 -> v6: Alt+E and Alt+A only on model pages. Adds "paths" to hotkeys bound to these
+// actions unless the user already set their own paths.
+function migrateV5ToV6(v5) {
+  const next = structuredClone(v5);
+  for (const hotkey of next.hotkeys || []) {
+    if (MODEL_ONLY_ACTION_IDS.includes(hotkey.actionId) && !Array.isArray(hotkey.paths)) {
+      hotkey.paths = [...MODEL_PATHS];
+    }
+  }
+  next.configVersion = 6;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -293,6 +313,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 5) {
     next = migrateV4ToV5(next);
+  }
+  if (version < 6) {
+    next = migrateV5ToV6(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;

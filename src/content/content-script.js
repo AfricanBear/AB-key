@@ -450,10 +450,22 @@
     return allowed.some((entry) => host === entry || host.endsWith(`.${entry}`));
   }
 
+  // Optional per-hotkey path prefixes, e.g. ["/app/modules"] = Abacum model pages only.
+  // No "paths" means every page of the allowed hosts. Checked at keypress time, so SPA
+  // navigation inside Abacum is handled.
+  function pathAllowed(paths, pathname) {
+    if (!Array.isArray(paths) || !paths.length) return true;
+    return paths.some((prefix) => pathname.startsWith(prefix));
+  }
+
   function findBinding(hotkey) {
     if (!config?.hotkeys?.length) return null;
-    const host = window.location.hostname;
-    return config.hotkeys.find((item) => item.key === hotkey && hostAllowed(item.hosts, host)) || null;
+    const { hostname, pathname } = window.location;
+    return (
+      config.hotkeys.find(
+        (item) => item.key === hotkey && hostAllowed(item.hosts, hostname) && pathAllowed(item.paths, pathname)
+      ) || null
+    );
   }
 
   function findAction(actionId) {
