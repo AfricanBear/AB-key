@@ -1,14 +1,35 @@
-import { CONFIG_KEY, migrateConfig } from "../shared/config-schema.js";
+import { CONFIG_KEY, isRailActionId, migrateConfig } from "../shared/config-schema.js";
 
 const hotkeyList = document.getElementById("hotkeyList");
 const emptyState = document.getElementById("emptyState");
-const optionsLink = document.getElementById("optionsLink");
+const optionsButton = document.getElementById("optionsButton");
+const panelParams = new URLSearchParams(location.search);
+const panelHostname = panelParams.get("host") || "app.abacum.io";
+// Labels of the right toolbar rail on the current page (top to bottom), or null if unknown.
+const railLabels = parseRailLabels(panelParams.get("rail"));
+
+function parseRailLabels(raw) {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map((label) => String(label || "")) : null;
+  } catch {
+    return null;
+  }
+}
 
 const POPUP_LABEL_OVERRIDES = {
   "action.bulkDimensions": "Edit Dimensions",
-  "action.addCreate": "Context: Add + Create variable",
-  "action.toolbar5": "Panel 5"
+  "action.addCreate": "Context: Add + Create variable"
 };
+
+function railRowLabel(action) {
+  const position = action.locatorProfile?.toolbarRail?.position;
+  if (!railLabels) return `Rail button ${position}`;
+  const label = railLabels[position - 1];
+  if (label === undefined) return null; // no such button on this page
+  return label || `Rail button ${position}`;
+}
 
 function shortLabel(action) {
   if (!action) return "Action";
@@ -33,13 +54,20 @@ function formatHotkey(key) {
 function hostMatches(bindingHosts, hostname) {
   const allowed = bindingHosts || ["*"];
   if (allowed.includes("*")) return true;
-  return allowed.some((entry) => hostname.endsWith(entry));
+  return allowed.some((entry) => hostname === entry || hostname.endsWith(`.${entry}`));
 }
 
 function escapeHtml(text) {
   const el = document.createElement("span");
   el.textContent = text;
   return el.innerHTML;
+}
+
+function syncPanelHeight() {
+  const shell = document.querySelector(".popup-shell");
+  if (!shell) return;
+  const height = Math.ceil(shell.getBoundingClientRect().height);
+  window.parent.postMessage({ type: "AB_KEY_PANEL_RESIZE", height }, "*");
 }
 
 function renderBindings(hotkeys, actions, hostname) {
@@ -49,9 +77,11 @@ function renderBindings(hotkeys, actions, hostname) {
     .filter((binding) => hostMatches(binding.hosts, hostname))
     .map((binding) => {
       const action = actionById.get(binding.actionId);
-      if (action && !action.enabled) return null;
+      if (!action || !action.enabled) return null;
+      const label = isRailActionId(action.actionId) ? railRowLabel(action) : shortLabel(action);
+      if (!label) return null;
       return {
-        label: shortLabel(action),
+        label,
         hotkey: formatHotkey(binding.key)
       };
     })
@@ -59,30 +89,31 @@ function renderBindings(hotkeys, actions, hostname) {
 
   if (!rows.length) {
     emptyState.hidden = false;
-    return;
+  } else {
+    emptyState.hidden = true;
+    for (const row of rows) {
+      const li = document.createElement("li");
+      li.className = "hotkey-row";
+      li.innerHTML = `<span class="hotkey-label">${escapeHtml(row.label)}</span><kbd class="hotkey-kbd">${escapeHtml(row.hotkey)}</kbd>`;
+      hotkeyList.appendChild(li);
+    }
   }
 
-  emptyState.hidden = true;
-  for (const row of rows) {
-    const li = document.createElement("li");
-    li.className = "hotkey-row";
-    li.innerHTML = `<span class="hotkey-label">${escapeHtml(row.label)}</span><kbd class="hotkey-kbd">${escapeHtml(row.hotkey)}</kbd>`;
-    hotkeyList.appendChild(li);
-  }
+  syncPanelHeight();
 }
 
 async function init() {
-  optionsLink.addEventListener("click", (event) => {
-    event.preventDefault();
+  optionsButton.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });
 
   const raw = await chrome.storage.local.get(CONFIG_KEY);
   const config = migrateConfig(raw[CONFIG_KEY]);
-  renderBindings(config.hotkeys || [], config.actions || [], "app.abacum.io");
+  renderBindings(config.hotkeys || [], config.actions || [], panelHostname);
 }
 
 init().catch(() => {
   emptyState.hidden = false;
   emptyState.textContent = "Could not load hotkeys.";
+  syncPanelHeight();
 });

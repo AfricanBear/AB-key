@@ -1,6 +1,6 @@
 # Project Status - AB-key
 
-Last updated: 2026-05-19
+Last updated: 2026-11-12
 
 ## Current Snapshot
 
@@ -78,13 +78,21 @@ Last updated: 2026-05-19
 
 ### Index toolbar hotkeys (v0.5.0)
 
-- `toolbarIndex` locator for Alt+1–5 on Abacum side rail; aria fallback for 1–4.
+- `toolbarIndex` locator for Alt+1–5 on Abacum `[data-testid="side-action-bar"]` rail. Superseded in v0.6.0 (see below).
+
+### Positional toolbar rail (v0.6.0, unreleased)
+
+- Abacum replaced `side-action-bar` with a new layout; each rail button now has `data-testid="toolbar-rail-button-<object>-<panel>"`.
+- Alt+1–5 = N-th visible rail button top to bottom (AI agent excluded) — works on Models, Dimensions, Datasets, Versions.
+- Logic: `src/content/toolbar-rail.js` (classic script, `globalThis.AbKeyToolbarRail`); locator `{ "toolbarRail": { "position": N } }`.
+- "Experimental features" toggle and `src/experimental/` removed; config schema v2 migrates v1 rail actions to `action.rail1..5`.
+- Verified live (2026-11-12, read-only DOM): Models = Info, Settings, Dimensions, Activity; Dimensions = Info, Activity; Datasets = Info, Scheduler, Transform, Data usage, Activity; Versions list = Activity.
 
 ## Important Paths
 
 - Manifest: `manifest.json`
 - Background worker: `src/background/service-worker.js`
-- Content scripts: `src/content/content-script.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`
+- Content scripts: `src/content/toolbar-rail.js`, `src/content/content-script.js`, `src/content/ab-key-panel-host.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`
 - Config schema: `src/shared/config-schema.js`
 - Options UI: `src/options/options.html`, `src/options/options.js`
 - Popup UI: `src/popup/popup.html`, `src/popup/popup.js`, `src/popup/popup.css`
@@ -95,14 +103,26 @@ Last updated: 2026-05-19
   - `docs/OPERA_COMPATIBILITY.md`
   - `docs/OPERA_SMOKE_TEST.md`
   - `docs/RELEASE_NOTES_OPERA.md`
+  - `docs/ROADMAP.md`
+
+## Roadmap
+
+Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
+
+**Planned Abacum UI features** (see roadmap for detail):
+
+- **Higher contrast model cells** — opacity on `.css-kdwx3d` / `.css-fjadjf` (options toggle)
+- **Dataset range selection sum** — Sum/Avg tooltip on Dataset via `ag-cell-range-selected*` (always on)
+- **Formula autocomplete locked to the side** — reposition `ul.CodeMirror-hints` beside Cell Editor (always on)
 
 ## Recommended Next Commit Targets
 
-1. Add automated tests for selector engine and config migration logic.
-2. Add CI workflow (manifest validation + packaging checks on push/PR).
-3. Add import utility to ingest future `Shortkeys.txt` exports automatically.
-4. Improve diagnostics UI (view structured logs directly in options page).
-5. Add action validation helpers to catch malformed mapping definitions earlier.
+1. Implement **Higher contrast model cells** (see roadmap).
+2. Add automated tests for selector engine and config migration logic.
+3. Add CI workflow (manifest validation + packaging checks on push/PR).
+4. Add import utility to ingest future `Shortkeys.txt` exports automatically.
+5. Improve diagnostics UI (view structured logs directly in options page).
+6. Add action validation helpers to catch malformed mapping definitions earlier.
 
 ## Open Risks / Follow-ups
 

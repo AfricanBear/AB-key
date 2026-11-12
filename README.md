@@ -84,6 +84,18 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.6.0
+
+- **Alt+1–5 rewritten:** click the right toolbar rail button by **position** (top to bottom) on every Abacum object type — Models, Dimensions, Datasets, Versions. Lookup uses Abacum's `data-testid="toolbar-rail-button-*"` (the old `side-action-bar` container no longer exists); the AI agent button is excluded; a geometric fallback is used if the test ids change. No page-wide fallback, so a missing button means no click.
+- The A+B key panel shows the actual rail labels of the current page for Alt+1–5.
+- **Fix:** content script failed to load (ES `import` in a content script) — all hotkeys were dead in the unreleased build.
+- **Fix:** config was reset to defaults on every extension update/reload; now only on first install.
+- **Fix:** hotkeys work with any keyboard layout (matched by physical key, e.g. Russian layout); `preventDefault` is now synchronous; config is cached instead of read on every keypress.
+- **Fix:** retries no longer burn out within milliseconds on busy pages; `timeoutMs` is honoured.
+- **Fix:** packaged zip now includes `assets/` (icons).
+- Ctrl+Shift+Y/U browser commands are unbound by default; the generic "Submit on any site" action is disabled.
+- "Experimental features" toggle removed; config migrates automatically to version 2.
+
 ### v0.5.0
 
 - Alt+1–5 click the Abacum toolbar by index; Alt+1–4 fall back to aria labels.
@@ -129,3 +141,4 @@ Full release notes (including v0.1.0 Opera packaging): [`docs/RELEASE_NOTES_OPER
 For implementation history and continuation notes, see:
 
 - `docs/PROJECT_STATUS.md`
+- `docs/ROADMAP.md` — planned features (e.g. higher contrast model cells on Abacum)

@@ -25,13 +25,6 @@ Use this snippet to add new automation tasks without touching core runtime code.
       "role": "button",
       "caseSensitive": false
     },
-    "toolbarIndex": {
-      "containerSelectors": [
-        ".MuiDrawer-root .MuiGrid-container",
-        ".MuiGrid-root.MuiGrid-container.css-1c87emg"
-      ],
-      "childIndex": 1
-    },
     "indexHint": 0
   },
   "executionPolicy": {
@@ -46,4 +39,13 @@ Use this snippet to add new automation tasks without touching core runtime code.
     }
   }
 }
+```
+
+## Toolbar rail actions (Abacum Alt+1–5)
+
+Rail actions use a positional locator instead of selectors/text/aria. Position is 1-based, top to bottom;
+the AI agent button is not counted. There is no fallback to a page-wide search.
+
+```json
+"locatorProfile": { "toolbarRail": { "position": 3 } }
 ```
