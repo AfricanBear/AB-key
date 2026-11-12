@@ -53,7 +53,7 @@
 
     const iframe = document.createElement("iframe");
     iframe.className = IFRAME_CLASS;
-    const params = new URLSearchParams({ host: location.hostname });
+    const params = new URLSearchParams({ host: location.hostname, path: location.pathname });
     // Pass the live rail labels so the panel shows what Alt+1–5 do on this page.
     const rail = globalThis.AbKeyToolbarRail?.describe();
     if (rail) params.set("rail", JSON.stringify(rail.buttons.map((button) => button.label || "")));

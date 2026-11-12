@@ -5,6 +5,8 @@ const emptyState = document.getElementById("emptyState");
 const optionsButton = document.getElementById("optionsButton");
 const panelParams = new URLSearchParams(location.search);
 const panelHostname = panelParams.get("host") || "app.abacum.io";
+// Page path the panel was opened on; null if unknown (then path-scoped hotkeys are shown).
+const panelPathname = panelParams.get("path");
 // Labels of the right toolbar rail on the current page (top to bottom), or null if unknown.
 const railLabels = parseRailLabels(panelParams.get("rail"));
 
@@ -57,6 +59,11 @@ function hostMatches(bindingHosts, hostname) {
   return allowed.some((entry) => hostname === entry || hostname.endsWith(`.${entry}`));
 }
 
+function pathMatches(bindingPaths, pathname) {
+  if (!Array.isArray(bindingPaths) || !bindingPaths.length || pathname === null) return true;
+  return bindingPaths.some((prefix) => pathname.startsWith(prefix));
+}
+
 function escapeHtml(text) {
   const el = document.createElement("span");
   el.textContent = text;
@@ -70,11 +77,11 @@ function syncPanelHeight() {
   window.parent.postMessage({ type: "AB_KEY_PANEL_RESIZE", height }, "*");
 }
 
-function renderBindings(hotkeys, actions, hostname) {
+function renderBindings(hotkeys, actions, hostname, pathname) {
   hotkeyList.replaceChildren();
   const actionById = new Map(actions.map((a) => [a.actionId, a]));
   const rows = hotkeys
-    .filter((binding) => hostMatches(binding.hosts, hostname))
+    .filter((binding) => hostMatches(binding.hosts, hostname) && pathMatches(binding.paths, pathname))
     .map((binding) => {
       const action = actionById.get(binding.actionId);
       if (!action || !action.enabled) return null;
@@ -109,7 +116,7 @@ async function init() {
 
   const raw = await chrome.storage.local.get(CONFIG_KEY);
   const config = migrateConfig(raw[CONFIG_KEY]);
-  renderBindings(config.hotkeys || [], config.actions || [], panelHostname);
+  renderBindings(config.hotkeys || [], config.actions || [], panelHostname, panelPathname);
 }
 
 init().catch(() => {

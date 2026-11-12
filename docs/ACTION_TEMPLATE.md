@@ -41,6 +41,15 @@ Use this snippet to add new automation tasks without touching core runtime code.
 }
 ```
 
+## Hotkey paths
+
+A hotkey can be limited to pages whose pathname starts with one of `paths`. Without `paths` it works
+on every page of its `hosts`. Outside the paths it does nothing and is hidden from the A+B key panel.
+
+```json
+{ "key": "alt+e", "actionId": "action.bulkDimensions", "hosts": ["app.abacum.io"], "paths": ["/app/modules"] }
+```
+
 ## Preferred selectors
 
 `preferredSelectors` are tried strictly in order before the scored search. The first element that is
