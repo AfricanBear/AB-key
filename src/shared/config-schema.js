@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 3;
+export const CURRENT_CONFIG_VERSION = 4;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -38,6 +38,59 @@ const LEGACY_RAIL_ACTION_IDS = ["action.info", "action.dimensions", "action.sett
 // the MUI class is not, and a bare { role: "button" } matched any button on the page.
 const BULK_DIMENSIONS_SELECTOR = "[data-testid='testid-builder-bulk-dimensions']";
 const LEGACY_BULK_DIMENSIONS_SELECTOR = ".MuiIconButton-root[data-testid='testid-builder-bulk-dimensions']";
+
+// Alt+S: Save in an open dialog first, then the model builder Save button (stable test id).
+// The previous generic search stays as the fallback, so Alt+S keeps working on other pages.
+const SAVE_LOCATOR = {
+  preferredSelectors: [
+    "[role='dialog'] .MuiButton-containedPrimary",
+    "[data-testid='testid-builder-save-button']"
+  ],
+  selectorCandidates: [".MuiButton-root.MuiButton-containedPrimary"],
+  textCriteria: { mode: "contains", value: "Save", caseSensitive: false },
+  ariaCriteria: { role: "button", caseSensitive: false }
+};
+const LEGACY_SAVE_LOCATOR = {
+  selectorCandidates: [".MuiButton-root.MuiButton-containedPrimary"],
+  textCriteria: { mode: "contains", value: "Save", caseSensitive: false },
+  ariaCriteria: { role: "button", caseSensitive: false }
+};
+
+// Alt+A: "+" button (stable test id), then exactly "Create variable" in its menu.
+// The menu also has "Create group" and "Create section"; "contains Create" matched all three.
+const ADD_MENU = "[data-testid='testid-builder-add-dropdown-anywhere']";
+const ADD_CREATE_STEPS = [
+  {
+    locatorProfile: {
+      preferredSelectors: ["[data-testid='testid-builder-add-button-anywhere']"],
+      selectorCandidates: [".builder-create-from-anywhere-button"],
+      ariaCriteria: { role: "button", caseSensitive: false }
+    }
+  },
+  {
+    locatorProfile: {
+      preferredSelectors: [`${ADD_MENU} [role='menuitem']`, `${ADD_MENU} li`],
+      selectorCandidates: [".MuiMenuItem-root"],
+      textCriteria: { mode: "exact", value: "Create variable", caseSensitive: false },
+      ariaCriteria: { role: "menuitem", caseSensitive: false }
+    }
+  }
+];
+const LEGACY_ADD_CREATE_STEPS = [
+  {
+    locatorProfile: {
+      selectorCandidates: [".builder-create-from-anywhere-button"],
+      ariaCriteria: { role: "button", caseSensitive: false }
+    }
+  },
+  {
+    locatorProfile: {
+      selectorCandidates: [".MuiMenuItem-root"],
+      textCriteria: { mode: "contains", value: "Create", caseSensitive: false },
+      ariaCriteria: { role: "menuitem", caseSensitive: false }
+    }
+  }
+];
 
 export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
@@ -94,11 +147,7 @@ export const DEFAULT_CONFIG = {
       label: "Save",
       enabled: true,
       scope: { hosts: [...ABACUM_HOSTS] },
-      locatorProfile: {
-        selectorCandidates: [".MuiButton-root.MuiButton-containedPrimary"],
-        textCriteria: { mode: "contains", value: "Save", caseSensitive: false },
-        ariaCriteria: { role: "button", caseSensitive: false }
-      },
+      locatorProfile: structuredClone(SAVE_LOCATOR),
       executionPolicy: { timeoutMs: 2000, retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true } }
     },
     {
@@ -106,28 +155,12 @@ export const DEFAULT_CONFIG = {
       label: "Add then Create",
       enabled: true,
       scope: { hosts: [...ABACUM_HOSTS] },
-      locatorProfile: {
-        selectorCandidates: [".builder-create-from-anywhere-button", ".MuiIconButton-root.builder-create-from-anywhere-button"],
-        ariaCriteria: { role: "button", caseSensitive: false }
-      },
+      // Unused while executionPolicy.steps is set; kept for the schema (required field).
+      locatorProfile: structuredClone(ADD_CREATE_STEPS[0].locatorProfile),
       executionPolicy: {
         timeoutMs: 3500,
         retryPolicy: { attempts: 10, intervalMs: 200, useMutationObserver: true },
-        steps: [
-          {
-            locatorProfile: {
-              selectorCandidates: [".builder-create-from-anywhere-button"],
-              ariaCriteria: { role: "button", caseSensitive: false }
-            }
-          },
-          {
-            locatorProfile: {
-              selectorCandidates: [".MuiMenuItem-root"],
-              textCriteria: { mode: "contains", value: "Create", caseSensitive: false },
-              ariaCriteria: { role: "menuitem", caseSensitive: false }
-            }
-          }
-        ]
+        steps: structuredClone(ADD_CREATE_STEPS)
       }
     },
     {
@@ -223,6 +256,25 @@ function migrateV2ToV3(v2) {
   return next;
 }
 
+const sameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// v3 -> v4: Alt+S and Alt+A use Abacum test ids. Only shipped defaults are replaced;
+// locators the user edited are kept.
+function migrateV3ToV4(v3) {
+  const next = structuredClone(v3);
+  const save = next.actions.find((item) => item.actionId === "action.save");
+  if (save && sameJson(save.locatorProfile, LEGACY_SAVE_LOCATOR)) {
+    save.locatorProfile = structuredClone(SAVE_LOCATOR);
+  }
+  const addCreate = next.actions.find((item) => item.actionId === "action.addCreate");
+  if (addCreate && sameJson(addCreate.executionPolicy?.steps, LEGACY_ADD_CREATE_STEPS)) {
+    addCreate.executionPolicy.steps = structuredClone(ADD_CREATE_STEPS);
+    addCreate.locatorProfile = structuredClone(ADD_CREATE_STEPS[0].locatorProfile);
+  }
+  next.configVersion = 4;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -236,6 +288,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 3) {
     next = migrateV2ToV3(next);
+  }
+  if (version < 4) {
+    next = migrateV3ToV4(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;

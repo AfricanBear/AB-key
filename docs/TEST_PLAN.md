@@ -34,6 +34,11 @@
   - Held key does not repeat-trigger actions.
   - A+B key panel lists the rail labels of the current page.
   - Alt+E/S/A/C behave as before (no regression).
+- Alt+S:
+  - Model builder with unsaved changes: clicks the builder Save button.
+  - Dialog with a primary Save button open (e.g. dimensions modal): clicks Save in the dialog, not the builder Save behind it.
+  - Other pages where Alt+S worked before: still works (fallback search).
+- Alt+A (hover a row so "+" is visible): opens the menu and clicks exactly "Create variable", never "Create group" / "Create section".
 - Alt+E (Edit Dimensions, Models builder):
   - With the variable's dimensions button visible: opens the dimensions modal (`module-builder-dbv-modal`).
   - Without that button on the page (or while the modal is open): nothing is clicked — in particular not "Show Builder Formulas".
