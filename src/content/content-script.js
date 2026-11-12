@@ -215,10 +215,35 @@
     };
   }
 
+  // preferredSelectors are tried strictly in order before the scored search. The first
+  // element that is visible, enabled, matches textCriteria (if any) and is not covered by
+  // another node wins. This lets a profile say "Save inside an open dialog first, then the
+  // builder Save button" — a button behind a modal fails the hit test and is skipped.
+  function selectPreferredCandidate(locatorProfile) {
+    for (const selector of locatorProfile.preferredSelectors || []) {
+      let nodes;
+      try {
+        nodes = document.querySelectorAll(selector);
+      } catch {
+        continue; // malformed selector
+      }
+      for (const element of nodes) {
+        if (!isVisible(element) || isDisabled(element)) continue;
+        if (locatorProfile.textCriteria?.value && !matchesText(element, locatorProfile.textCriteria)) continue;
+        if (!hitTest(element)) continue;
+        return { element, score: 1000, strategyTag: "preferred", selector };
+      }
+    }
+    return null;
+  }
+
   function selectBestCandidate(locatorProfile) {
     // Toolbar rail is positional only: never fall back to a page-wide search,
     // otherwise Alt+N could click an unrelated button with a similar label.
     if (locatorProfile?.toolbarRail) return selectRailCandidate(locatorProfile);
+
+    const preferred = selectPreferredCandidate(locatorProfile);
+    if (preferred) return { candidate: preferred };
 
     const scored = collectCandidates(locatorProfile).sort((a, b) => b.score - a.score);
     if (!scored.length) return { candidate: null };
