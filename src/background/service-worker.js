@@ -40,9 +40,16 @@ async function executeCommand(command) {
   await log(LogLevel.INFO, "Action execution succeeded", { correlationId, actionId: action.actionId, elapsedMs: response.elapsedMs });
 }
 
-chrome.runtime.onInstalled.addListener(async () => {
-  await resetConfig();
-  await log(LogLevel.INFO, "Extension installed and configuration initialized.");
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+  // Only a fresh install starts from defaults. Updates and "Reload" of an unpacked
+  // extension keep the user's config and just migrate it.
+  if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    await resetConfig();
+    await log(LogLevel.INFO, "Extension installed and configuration initialized.");
+    return;
+  }
+  await getConfig();
+  await log(LogLevel.INFO, "Extension updated; configuration migrated.", { reason });
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
@@ -56,6 +63,41 @@ chrome.commands.onCommand.addListener(async (command) => {
       details: error.details
     });
   }
+});
+
+async function togglePanelOnTab(tab) {
+  if (!tab?.id) {
+    return;
+  }
+  const message = { type: "TOGGLE_AB_KEY_PANEL" };
+  try {
+    await chrome.tabs.sendMessage(tab.id, message);
+    return;
+  } catch {
+    // Content script may not be injected on restricted pages.
+  }
+  try {
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      files: ["src/content/ab-key-panel-host.css"]
+    });
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ["src/content/toolbar-rail.js", "src/content/ab-key-panel-host.js"]
+    });
+    await chrome.tabs.sendMessage(tab.id, message);
+  } catch (error) {
+    await log(LogLevel.WARN, "Could not open A+B key panel on this tab", {
+      tabId: tab.id,
+      message: error?.message || "Injection failed."
+    });
+  }
+}
+
+chrome.action.onClicked.addListener((tab) => {
+  togglePanelOnTab(tab).catch(() => {
+    // Errors are logged inside togglePanelOnTab.
+  });
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

@@ -7,10 +7,14 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
+    <div class="popup-shell">
     <div class="panel">
       <header class="panel-header">
-        <h1>A+B key</h1>
-        <p class="subtitle">Abacum hotkeys</p>
+        <div class="panel-header-text">
+          <h1>A+B key</h1>
+          <p class="subtitle">Abacum hotkeys</p>
+        </div>
+        <button type="button" id="optionsButton" class="panel-options-btn" title="Options" aria-label="Open options">⚙️</button>
       </header>
 
       <section class="bindings">
@@ -19,9 +23,8 @@
         <p id="emptyState" class="empty-state" hidden>No hotkeys configured.</p>
       </section>
 
-      <footer class="panel-footer">
-        <a id="optionsLink" href="#">Options</a>
-      </footer>
+      <footer class="panel-footer" id="panelFooter" aria-label="Hotkey actions"></footer>
+    </div>
     </div>
     <script type="module" src="popup.js"></script>
   </body>

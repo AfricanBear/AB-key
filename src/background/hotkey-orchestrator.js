@@ -15,5 +15,5 @@ export function resolveActionForCommand(config, command) {
 export function canRunOnHost(action, host) {
   const hosts = action.scope?.hosts || ["*"];
   if (hosts.includes("*")) return true;
-  return hosts.some((allowed) => host.endsWith(allowed));
+  return hosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
 }

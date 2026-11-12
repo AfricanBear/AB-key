@@ -1,4 +1,15 @@
+// AB-key content script: hotkey listener + click engine.
+// Classic script (Chrome does not support ES-module content scripts in the manifest).
+// Depends on src/content/toolbar-rail.js, loaded before this file.
 (function () {
+  "use strict";
+
+  if (globalThis.__abKeyContentScriptReady) return;
+  globalThis.__abKeyContentScriptReady = true;
+
+  // Keep in sync with CONFIG_KEY in src/shared/config-schema.js.
+  const CONFIG_KEY = "mv3ClickAutomation.config";
+
   const ErrorCode = Object.freeze({
     ElementNotFound: "ElementNotFound",
     AmbiguousMatch: "AmbiguousMatch",
@@ -7,130 +18,53 @@
     TimeoutExceeded: "TimeoutExceeded",
     RuntimeFailure: "RuntimeFailure"
   });
-  const CONFIG_KEY = "mv3ClickAutomation.config";
+
   const DEBUG_OUTLINE_ATTR = "data-ab-key-debug";
   const DEBUG_PREFIX = "[AB-key]";
+  const MIN_RETRY_WAIT_MS = 50;
+
+  // ---------------------------------------------------------------------------
+  // Config cache (read once, refreshed on storage change — no storage read per keypress)
+  // ---------------------------------------------------------------------------
+
+  let config = null;
+
+  function loadConfig() {
+    return chrome.storage.local
+      .get(CONFIG_KEY)
+      .then((data) => {
+        config = data?.[CONFIG_KEY] || null;
+      })
+      .catch(() => {
+        config = null;
+      });
+  }
+
+  const configReady = loadConfig();
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes[CONFIG_KEY]) return;
+    config = changes[CONFIG_KEY].newValue || null;
+  });
+
+  // ---------------------------------------------------------------------------
+  // Logging
+  // ---------------------------------------------------------------------------
 
   function debugLog(enabled, message, details) {
     if (!enabled) return;
-    if (details !== undefined) {
-      console.debug(DEBUG_PREFIX, message, details);
-    } else {
-      console.debug(DEBUG_PREFIX, message);
-    }
+    if (details !== undefined) console.debug(DEBUG_PREFIX, message, details);
+    else console.debug(DEBUG_PREFIX, message);
   }
 
-  function describeElement(element) {
-    if (!element) return null;
-    const tag = element.tagName?.toLowerCase() || "unknown";
-    const aria = getAriaLabel(element);
-    const text = normalizeText(element.innerText || element.textContent || "", false).slice(0, 80);
-    return { tag, aria, text, className: element.className || "" };
+  function warnLog(message, details) {
+    if (details !== undefined) console.warn(DEBUG_PREFIX, message, details);
+    else console.warn(DEBUG_PREFIX, message);
   }
 
-  function countButtonSlots(container) {
-    return Array.from(container.children).filter((child) => child.querySelector("button")).length;
-  }
-
-  function scoreIconRailContainer(container) {
-    if (!isVisible(container)) return -1;
-    const buttonSlots = countButtonSlots(container);
-    if (buttonSlots < 3 || buttonSlots > 8) return -1;
-    const rect = container.getBoundingClientRect();
-    return rect.right * 2 + buttonSlots * 20 + (rect.width <= 96 ? 10 : 0);
-  }
-
-  function findIconRailContainer(selectors) {
-    const seen = new Set();
-    const candidates = [];
-    const trySelector = (selector) => {
-      if (!selector || seen.has(selector)) return;
-      seen.add(selector);
-      try {
-        for (const node of document.querySelectorAll(selector)) {
-          const score = scoreIconRailContainer(node);
-          if (score >= 0) candidates.push({ container: node, score, selector });
-        }
-      } catch {
-        // Ignore malformed selectors.
-      }
-    };
-
-    for (const selector of selectors || []) trySelector(selector);
-    trySelector(".MuiDrawer-root .MuiGrid-container");
-
-    if (!candidates.length) return null;
-    candidates.sort((a, b) => b.score - a.score);
-    return candidates[0];
-  }
-
-  function getToolbarButtonAtIndex(rail, childIndex) {
-    if (!rail?.container || typeof childIndex !== "number") return null;
-    return rail.container.querySelector(`> :nth-child(${childIndex}) button`);
-  }
-
-  function resolveToolbarIndexElement(locatorProfile) {
-    const toolbarIndex = locatorProfile?.toolbarIndex;
-    if (!toolbarIndex || typeof toolbarIndex.childIndex !== "number") return null;
-
-    const rail = findIconRailContainer(toolbarIndex.containerSelectors);
-    if (!rail) return null;
-
-    const button = getToolbarButtonAtIndex(rail, toolbarIndex.childIndex);
-    if (!button) return { rail, button: null };
-
-    return { rail, button };
-  }
-
-  function isToolbarIndexOnly(locatorProfile) {
-    return Boolean(locatorProfile?.toolbarIndex?.indexOnly !== false && locatorProfile?.toolbarIndex);
-  }
-
-  function logToolbarLookup(locatorProfile, enabled, resolvedRail) {
-    const toolbarIndex = locatorProfile?.toolbarIndex;
-    if (!enabled || !toolbarIndex) return;
-
-    const childIndex = toolbarIndex.childIndex;
-    const railCandidates = [];
-    const seen = new Set();
-    const trySelector = (selector) => {
-      if (!selector || seen.has(selector)) return;
-      seen.add(selector);
-      try {
-        for (const node of document.querySelectorAll(selector)) {
-          const buttonSlots = countButtonSlots(node);
-          railCandidates.push({
-            selector,
-            visible: isVisible(node),
-            childCount: node.children.length,
-            buttonSlots,
-            score: scoreIconRailContainer(node)
-          });
-        }
-      } catch (error) {
-        railCandidates.push({ selector, status: "selector-error", error: error.message });
-      }
-    };
-
-    for (const selector of toolbarIndex.containerSelectors || []) trySelector(selector);
-    trySelector(".MuiDrawer-root .MuiGrid-container");
-
-    const selectedRail = resolvedRail || findIconRailContainer(toolbarIndex.containerSelectors);
-    const button = selectedRail ? getToolbarButtonAtIndex(selectedRail, childIndex) : null;
-
-    debugLog(enabled, "Toolbar index lookup", {
-      childIndex,
-      selectedRail: selectedRail
-        ? {
-            selector: selectedRail.selector,
-            childCount: selectedRail.container.children.length,
-            buttonSlots: countButtonSlots(selectedRail.container)
-          }
-        : null,
-      button: describeElement(button),
-      railCandidates
-    });
-  }
+  // ---------------------------------------------------------------------------
+  // Generic matching engine (selectors / text / aria)
+  // ---------------------------------------------------------------------------
 
   function normalizeText(value, caseSensitive) {
     const normalized = (value || "").replace(/\s+/g, " ").trim();
@@ -139,6 +73,20 @@
 
   function getAriaLabel(element) {
     return element.getAttribute("aria-label") || element.getAttribute("aria-labelledby") || "";
+  }
+
+  function describeElement(element) {
+    if (!element) return null;
+    const tag = element.tagName?.toLowerCase() || "unknown";
+    const aria = getAriaLabel(element);
+    const text = normalizeText(element.innerText || element.textContent || "", false).slice(0, 80);
+    return {
+      tag,
+      aria,
+      text,
+      testId: element.getAttribute("data-testid") || "",
+      className: typeof element.className === "string" ? element.className : ""
+    };
   }
 
   function matchesText(element, criteria) {
@@ -150,8 +98,7 @@
     if (criteria.mode === "exact") return haystack === needle;
     if (criteria.mode === "regex") {
       try {
-        const flags = caseSensitive ? "" : "i";
-        return new RegExp(criteria.value, flags).test(haystack);
+        return new RegExp(criteria.value, caseSensitive ? "" : "i").test(haystack);
       } catch {
         return false;
       }
@@ -194,6 +141,10 @@
     return role === "button" || role === "menuitem" || role === "link";
   }
 
+  function isInViewport(rect) {
+    return rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
+  }
+
   function hitTest(element) {
     const rect = element.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
@@ -214,63 +165,64 @@
     return score;
   }
 
-  function dedupe(elements) {
-    return [...new Set(elements)];
-  }
-
-  function collectCandidates(locatorProfile, options = {}) {
-    const root = options.root || document;
+  function collectCandidates(locatorProfile) {
     const raw = [];
-    const selectorCandidates = locatorProfile.selectorCandidates || [];
-    for (const selector of selectorCandidates) {
+    for (const selector of locatorProfile.selectorCandidates || []) {
       try {
-        const nodes = Array.from(root.querySelectorAll(selector));
-        for (const node of nodes) raw.push({ element: node, strategyTag: "css" });
+        for (const node of document.querySelectorAll(selector)) raw.push({ element: node, strategyTag: "css" });
       } catch {
-        // Ignore malformed selectors and continue fallback chain.
+        // Ignore malformed selectors and continue the fallback chain.
       }
     }
-    const broadPool = Array.from(
-      root.querySelectorAll("button, a, [role='button'], [role='menuitem'], input, div, span")
-    );
+    const broadPool = document.querySelectorAll("button, a, [role='button'], [role='menuitem'], input, div, span");
     for (const node of broadPool) {
       if (matchesText(node, locatorProfile.textCriteria)) raw.push({ element: node, strategyTag: "text" });
       else if (matchesAria(node, locatorProfile.ariaCriteria)) raw.push({ element: node, strategyTag: "aria" });
     }
-    return dedupe(raw.map((c) => c.element)).map((element) => {
-      const tag = raw.find((c) => c.element === element)?.strategyTag || "hybrid";
-      return {
-        element,
-        score: scoreCandidate(element, locatorProfile, tag),
-        strategyTag: tag
-      };
-    });
+    const firstTag = new Map();
+    for (const c of raw) if (!firstTag.has(c.element)) firstTag.set(c.element, c.strategyTag);
+    return Array.from(firstTag, ([element, strategyTag]) => ({
+      element,
+      strategyTag,
+      score: scoreCandidate(element, locatorProfile, strategyTag)
+    }));
   }
 
-  function selectBestCandidate(locatorProfile, options = {}) {
-    const toolbarIndex = locatorProfile?.toolbarIndex;
-    const indexOnly = isToolbarIndexOnly(locatorProfile);
+  // ---------------------------------------------------------------------------
+  // Candidate selection
+  // ---------------------------------------------------------------------------
 
-    if (!options.skipToolbar && toolbarIndex) {
-      const resolved = resolveToolbarIndexElement(locatorProfile);
-      if (resolved?.button) {
-        return {
-          element: resolved.button,
-          score: 1000,
-          strategyTag: "toolbar",
-          railSelector: resolved.rail.selector
-        };
-      }
-      if (indexOnly) return null;
+  function selectRailCandidate(locatorProfile) {
+    const rail = globalThis.AbKeyToolbarRail;
+    const position = Number(locatorProfile.toolbarRail.position);
+    if (!rail || !Number.isInteger(position) || position < 1) {
+      return { candidate: null, railInfo: { position, source: rail ? "invalid-position" : "rail-script-missing" } };
     }
+    const found = rail.getButton(position);
+    const railInfo = { position, source: found.source, total: found.total };
+    if (!found.element) return { candidate: null, railInfo };
+    return {
+      candidate: { element: found.element, score: 1000, strategyTag: `rail-${found.source}` },
+      railInfo
+    };
+  }
 
-    const scored = collectCandidates(locatorProfile, options).sort((a, b) => b.score - a.score);
-    if (!scored.length) return null;
+  function selectBestCandidate(locatorProfile) {
+    // Toolbar rail is positional only: never fall back to a page-wide search,
+    // otherwise Alt+N could click an unrelated button with a similar label.
+    if (locatorProfile?.toolbarRail) return selectRailCandidate(locatorProfile);
+
+    const scored = collectCandidates(locatorProfile).sort((a, b) => b.score - a.score);
+    if (!scored.length) return { candidate: null };
     if (typeof locatorProfile.indexHint === "number" && scored[locatorProfile.indexHint]) {
-      return scored[locatorProfile.indexHint];
+      return { candidate: scored[locatorProfile.indexHint] };
     }
-    return scored[0];
+    return { candidate: scored[0] };
   }
+
+  // ---------------------------------------------------------------------------
+  // Clicking
+  // ---------------------------------------------------------------------------
 
   function clearDebugOutline() {
     const highlighted = document.querySelector(`[${DEBUG_OUTLINE_ATTR}]`);
@@ -288,7 +240,10 @@
   }
 
   function ensureInteractable(element) {
-    element.scrollIntoView({ block: "center", inline: "center" });
+    // Scroll only when needed: fixed rails and toolbars must not move the page.
+    if (!isInViewport(element.getBoundingClientRect())) {
+      element.scrollIntoView({ block: "center", inline: "center" });
+    }
     if (!isVisible(element) || isDisabled(element)) {
       return { ok: false, error: { code: ErrorCode.ElementNotInteractable, message: "Element is not visible or is disabled." } };
     }
@@ -305,22 +260,9 @@
     return { ok: true };
   }
 
-  function normalizeHotkey(event) {
-    const parts = [];
-    if (event.ctrlKey) parts.push("ctrl");
-    if (event.altKey) parts.push("alt");
-    if (event.shiftKey) parts.push("shift");
-    if (event.metaKey) parts.push("meta");
-    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key.toLowerCase();
-    if (!["control", "alt", "shift", "meta"].includes(key)) {
-      parts.push(key);
-    }
-    return parts.join("+");
-  }
-
   function runPreActions(preActions) {
     for (const action of preActions || []) {
-      if (action?.type === "blurActiveElement" && document.activeElement && typeof document.activeElement.blur === "function") {
+      if (action?.type === "blurActiveElement" && typeof document.activeElement?.blur === "function") {
         document.activeElement.blur();
       }
     }
@@ -330,76 +272,82 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  // Wait for a DOM change or the interval, whichever comes first — but never less than
+  // MIN_RETRY_WAIT_MS. Abacum mutates the DOM constantly, so without the floor all retries
+  // were burnt within a few milliseconds and timeoutMs was never honoured.
   async function waitForMutationOrDelay(intervalMs, useMutationObserver) {
     if (!useMutationObserver) {
       await wait(intervalMs);
       return;
     }
+    await wait(MIN_RETRY_WAIT_MS);
     await new Promise((resolve) => {
-      let resolved = false;
-      const timer = setTimeout(() => {
-        resolved = true;
-        observer.disconnect();
-        resolve();
-      }, intervalMs);
-      const observer = new MutationObserver(() => {
-        if (resolved) return;
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
         clearTimeout(timer);
         observer.disconnect();
         resolve();
-      });
+      };
+      const timer = setTimeout(finish, Math.max(0, intervalMs - MIN_RETRY_WAIT_MS));
+      const observer = new MutationObserver(finish);
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Action execution
+  // ---------------------------------------------------------------------------
+
   async function executeAction(payload) {
     const started = performance.now();
-    const config = await chrome.storage.local.get(CONFIG_KEY);
-    const diagnosticsEnabled = Boolean(config?.[CONFIG_KEY]?.diagnosticsEnabled);
+    const elapsed = () => Math.round(performance.now() - started);
+    await configReady;
+    const diagnosticsEnabled = Boolean(config?.diagnosticsEnabled);
     const actionId = payload.actionId || "unknown";
     const profile = payload.locatorProfile || {};
     const policy = payload.executionPolicy || {};
     debugLog(diagnosticsEnabled, "Executing action", { actionId });
     runPreActions(policy.preActions);
+
     const steps = policy.steps?.length ? policy.steps : [{ locatorProfile: profile }];
     const retry = policy.retryPolicy || {};
-    const attempts = Math.max(1, retry.attempts || 1);
-    const intervalMs = Math.max(50, retry.intervalMs || 200);
+    const maxAttempts = Math.max(1, retry.attempts || 1);
+    const intervalMs = Math.max(MIN_RETRY_WAIT_MS, retry.intervalMs || 200);
     const timeoutMs = Math.max(intervalMs, policy.timeoutMs || 1500);
     const deadline = Date.now() + timeoutMs;
     let lastError = null;
 
     for (const step of steps) {
+      const stepProfile = step.locatorProfile || profile;
       let stepCompleted = false;
-      for (let i = 0; i < attempts; i += 1) {
-        const stepProfile = step.locatorProfile || profile;
-        const indexOnly = isToolbarIndexOnly(stepProfile);
-        let candidate = selectBestCandidate(stepProfile);
 
-        if (diagnosticsEnabled) {
-          const resolved = stepProfile.toolbarIndex ? resolveToolbarIndexElement(stepProfile) : null;
-          if (stepProfile.toolbarIndex && !candidate?.element) {
-            logToolbarLookup(stepProfile, true, resolved?.rail || findIconRailContainer(stepProfile.toolbarIndex.containerSelectors));
-          }
-          debugLog(true, "Attempting match", {
-            actionId,
-            attempt: i + 1,
-            maxAttempts: attempts,
-            strategy: candidate?.strategyTag || "none",
-            indexOnly,
-            toolbarIndex: stepProfile.toolbarIndex?.childIndex ?? null,
-            railSelector: candidate?.railSelector || null
-          });
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        let selection;
+        try {
+          selection = selectBestCandidate(stepProfile);
+        } catch (error) {
+          lastError = { code: ErrorCode.RuntimeFailure, message: error.message || "Unexpected error during element lookup." };
+          warnLog("Lookup threw an error", { actionId, attempt, error: lastError });
+          break;
         }
+        const candidate = selection.candidate;
+        debugLog(diagnosticsEnabled, "Attempting match", {
+          actionId,
+          attempt,
+          maxAttempts,
+          strategy: candidate?.strategyTag || "none",
+          rail: selection.railInfo || null
+        });
 
-        while (candidate?.element) {
+        if (candidate?.element) {
           if (diagnosticsEnabled) showDebugOutline(candidate.element);
           const clickResult = clickElement(candidate.element);
           if (clickResult.ok) {
             debugLog(diagnosticsEnabled, "Click succeeded", {
               actionId,
               strategy: candidate.strategyTag,
-              railSelector: candidate.railSelector || null,
               element: describeElement(candidate.element)
             });
             stepCompleted = true;
@@ -412,114 +360,103 @@
             error: clickResult.error,
             element: describeElement(candidate.element)
           });
-          break;
-        }
-
-        if (!candidate?.element) {
+        } else {
           lastError = {
             code: ErrorCode.ElementNotFound,
-            message: indexOnly
-              ? "No toolbar button found at index (index-only; global aria fallback disabled)."
-              : "No matching element found."
+            message: stepProfile.toolbarRail
+              ? `No toolbar rail button at position ${stepProfile.toolbarRail.position} on this page.`
+              : "No matching element found.",
+            details: selection.railInfo || undefined
           };
-          if (stepProfile.toolbarIndex) {
-            logToolbarLookup(stepProfile, diagnosticsEnabled);
-          }
-          debugLog(diagnosticsEnabled, "No matching element found", {
-            actionId,
-            attempt: i + 1,
-            maxAttempts: attempts,
-            indexOnly,
-            selectorCandidates: stepProfile.selectorCandidates || [],
-            ariaCriteria: stepProfile.ariaCriteria || null,
-            toolbarIndex: stepProfile.toolbarIndex || null
-          });
+          debugLog(diagnosticsEnabled, "No matching element found", { actionId, attempt, rail: selection.railInfo || null });
         }
-        if (stepCompleted) {
-          break;
-        }
-        if (Date.now() >= deadline) {
-          break;
-        }
+
+        if (Date.now() >= deadline) break;
         await waitForMutationOrDelay(intervalMs, Boolean(retry.useMutationObserver));
       }
+
       if (!stepCompleted) {
-        debugLog(diagnosticsEnabled, "Action failed", {
-          actionId,
-          error: lastError || { code: ErrorCode.TimeoutExceeded, message: "Action timed out before a match was found." },
-          elapsedMs: Math.round(performance.now() - started)
-        });
-        return {
-          ok: false,
-          error: lastError || { code: ErrorCode.TimeoutExceeded, message: "Action timed out before a match was found." },
-          elapsedMs: Math.round(performance.now() - started)
-        };
+        const error = lastError || { code: ErrorCode.TimeoutExceeded, message: "Action timed out before a match was found." };
+        debugLog(diagnosticsEnabled, "Action failed", { actionId, error, elapsedMs: elapsed() });
+        return { ok: false, error, elapsedMs: elapsed() };
       }
     }
 
-    debugLog(diagnosticsEnabled, "Action completed", {
-      actionId,
-      elapsedMs: Math.round(performance.now() - started)
-    });
-
-    return {
-      ok: true,
-      elapsedMs: Math.round(performance.now() - started)
-    };
+    debugLog(diagnosticsEnabled, "Action completed", { actionId, elapsedMs: elapsed() });
+    return { ok: true, elapsedMs: elapsed() };
   }
 
-  async function executeActionById(actionId, diagnosticsEnabled = false) {
-    const configData = await chrome.storage.local.get(CONFIG_KEY);
-    const config = configData?.[CONFIG_KEY];
-    if (!config?.actions?.length) {
-      debugLog(diagnosticsEnabled, "No actions configured", { actionId });
-      return { ok: false, error: { code: ErrorCode.RuntimeFailure, message: "No actions configured." } };
-    }
-    const action = config.actions.find((item) => item.actionId === actionId && item.enabled);
-    if (!action) {
-      debugLog(diagnosticsEnabled, "Action not found or disabled", { actionId });
-      return { ok: false, error: { code: ErrorCode.RuntimeFailure, message: `Action ${actionId} is not available.` } };
-    }
-    return executeAction({
+  // ---------------------------------------------------------------------------
+  // Hotkeys
+  // ---------------------------------------------------------------------------
+
+  // Use the physical key (event.code) so hotkeys work with any keyboard layout:
+  // with a Russian layout Alt+E reports event.key "у", but event.code is still "KeyE".
+  function keyFromEvent(event) {
+    const code = event.code || "";
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+    if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+    if (/^Numpad[0-9]$/.test(code)) return code.slice(6);
+    return (event.key || "").toLowerCase();
+  }
+
+  function normalizeHotkey(event) {
+    const parts = [];
+    if (event.ctrlKey) parts.push("ctrl");
+    if (event.altKey) parts.push("alt");
+    if (event.shiftKey) parts.push("shift");
+    if (event.metaKey) parts.push("meta");
+    const key = keyFromEvent(event);
+    if (key && !["control", "alt", "shift", "meta", "altgraph"].includes(key)) parts.push(key);
+    return parts.join("+");
+  }
+
+  function hostAllowed(hosts, host) {
+    const allowed = hosts || ["*"];
+    if (allowed.includes("*")) return true;
+    return allowed.some((entry) => host === entry || host.endsWith(`.${entry}`));
+  }
+
+  function findBinding(hotkey) {
+    if (!config?.hotkeys?.length) return null;
+    const host = window.location.hostname;
+    return config.hotkeys.find((item) => item.key === hotkey && hostAllowed(item.hosts, host)) || null;
+  }
+
+  function findAction(actionId) {
+    return config?.actions?.find((item) => item.actionId === actionId && item.enabled) || null;
+  }
+
+  function onKeyDown(event) {
+    if (event.isComposing || (!event.altKey && !event.ctrlKey && !event.metaKey)) return;
+    const hotkey = normalizeHotkey(event);
+    const binding = findBinding(hotkey);
+    if (!binding) return;
+    const action = findAction(binding.actionId);
+    if (!action) return;
+
+    // Must be synchronous: calling preventDefault after an await has no effect.
+    event.preventDefault();
+    if (event.repeat) return;
+
+    const diagnosticsEnabled = Boolean(config.diagnosticsEnabled);
+    debugLog(diagnosticsEnabled, "Hotkey pressed", { hotkey, actionId: action.actionId });
+    executeAction({
       actionId: action.actionId,
       locatorProfile: action.locatorProfile,
       executionPolicy: action.executionPolicy
-    });
+    })
+      .then((result) => {
+        if (!result.ok) warnLog("Hotkey action failed", { hotkey, actionId: action.actionId, error: result.error });
+      })
+      .catch((error) => warnLog("Hotkey action crashed", { hotkey, actionId: action.actionId, message: error?.message }));
   }
 
-  async function handleCustomHotkeys(event) {
-    if (event.repeat) return;
+  window.addEventListener("keydown", onKeyDown, true);
 
-    const hotkey = normalizeHotkey(event);
-    const host = window.location.hostname;
-    const configData = await chrome.storage.local.get(CONFIG_KEY);
-    const config = configData?.[CONFIG_KEY];
-    if (!config?.hotkeys?.length) return;
-    const binding = config.hotkeys.find((item) => {
-      if (item.key !== hotkey) return false;
-      const allowed = item.hosts || ["*"];
-      if (allowed.includes("*")) return true;
-      return allowed.some((entry) => host.endsWith(entry));
-    });
-    if (!binding) return;
-    event.preventDefault();
-    const diagnosticsEnabled = Boolean(config.diagnosticsEnabled);
-    debugLog(diagnosticsEnabled, "Hotkey pressed", { hotkey, actionId: binding.actionId, host });
-    const result = await executeActionById(binding.actionId, diagnosticsEnabled);
-    if (result && !result.ok) {
-      console.warn(DEBUG_PREFIX, "Hotkey action failed", {
-        hotkey,
-        actionId: binding.actionId,
-        error: result.error
-      });
-    }
-  }
-
-  window.addEventListener("keydown", (event) => {
-    handleCustomHotkeys(event).catch(() => {
-      // Errors are surfaced by runtime response for command path.
-    });
-  });
+  // ---------------------------------------------------------------------------
+  // Messages from the service worker (chrome.commands path)
+  // ---------------------------------------------------------------------------
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type !== "EXECUTE_ACTION") return false;
@@ -528,10 +465,7 @@
       .catch((error) => {
         sendResponse({
           ok: false,
-          error: {
-            code: ErrorCode.RuntimeFailure,
-            message: error.message || "Unexpected execution failure."
-          }
+          error: { code: ErrorCode.RuntimeFailure, message: error.message || "Unexpected execution failure." }
         });
       });
     return true;

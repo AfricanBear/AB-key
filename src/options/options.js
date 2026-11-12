@@ -48,8 +48,10 @@ async function saveConfig() {
     parsed.diagnosticsEnabled = diagnosticsToggle.checked;
     parsed.abacumTabTitleEnabled = abacumTabTitleToggle.checked;
     parsed.lightThemeNavEnabled = lightThemeNavToggle.checked;
-    validateConfigShape(parsed);
-    await chrome.storage.local.set({ [CONFIG_KEY]: parsed });
+    const migrated = migrateConfig(parsed);
+    validateConfigShape(migrated);
+    await chrome.storage.local.set({ [CONFIG_KEY]: migrated });
+    configText.value = JSON.stringify(migrated, null, 2);
     setStatus("Configuration saved.");
   } catch (error) {
     setStatus(`Save failed: ${error.message}`, true);

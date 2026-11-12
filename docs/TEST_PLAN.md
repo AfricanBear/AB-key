@@ -23,12 +23,18 @@
 - Aria-only icon button.
 - Multiple matching elements with index hint.
 - Overlay-blocked element yields `OverlayBlocked`.
-- Abacum toolbar rail (Alt+1–5):
-  - Alt+1–5 click by **index** in the visible right icon rail (strategy `toolbar` in console).
-  - Global aria fallback must **not** run for rail hotkeys (`indexOnly: true`).
-  - Alt+5 clicks fifth rail slot (aria label TBD).
+- Abacum toolbar rail (Alt+1–5, positional):
+  - Models: Alt+1 Info, Alt+2 Settings, Alt+3 Dimensions, Alt+4 Activity; Alt+5 does nothing.
+  - Dimensions: Alt+1 Info, Alt+2 Activity; Alt+3–5 do nothing.
+  - Datasets: Alt+1 Info, Alt+2 Scheduler, Alt+3 Transform, Alt+4 Data usage, Alt+5 Activity.
+  - Versions list: Alt+1 Activity.
+  - Repeat the checks with a panel already open (rail must still resolve; pressing the same key toggles the panel).
+  - AI agent button is never clicked.
+  - Russian keyboard layout: Alt+1–5 and Alt+E/S/A/C still work.
   - Held key does not repeat-trigger actions.
-  - Alt+E/S/A/C still use semantic locators (no regression).
+  - A+B key panel lists the rail labels of the current page.
+  - Alt+E/S/A/C behave as before (no regression).
+- Extension reload / update keeps the saved configuration (not reset to defaults).
 
 ## Performance Gates
 

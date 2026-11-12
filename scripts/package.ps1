@@ -26,6 +26,8 @@ New-Item -Path $staging -ItemType Directory | Out-Null
 
 Copy-Item -Path (Join-Path $root "manifest.json") -Destination $staging
 Copy-Item -Path (Join-Path $root "src") -Destination $staging -Recurse
+# Icons and option previews are referenced by the manifest and options page.
+Copy-Item -Path (Join-Path $root "assets") -Destination $staging -Recurse
 Copy-Item -Path (Join-Path $root "README.md") -Destination $staging
 
 Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $zipPath
