@@ -92,7 +92,7 @@ Last updated: 2026-11-12
 
 - Manifest: `manifest.json`
 - Background worker: `src/background/service-worker.js`
-- Content scripts: `src/content/toolbar-rail.js`, `src/content/content-script.js`, `src/content/ab-key-panel-host.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`
+- Content scripts: `src/content/toolbar-rail.js`, `src/content/content-script.js`, `src/content/ab-key-panel-host.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`, `src/content/abacum-darker-values.js`
 - Config schema: `src/shared/config-schema.js`
 - Options UI: `src/options/options.html`, `src/options/options.js`
 - Popup UI: `src/popup/popup.html`, `src/popup/popup.js`, `src/popup/popup.css`
@@ -111,16 +111,14 @@ Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
 
 **Planned Abacum UI features** (see roadmap for detail):
 
-- **Higher contrast model cells** — opacity on `.css-kdwx3d` / `.css-fjadjf` (options toggle)
 - **Dataset range selection sum** — Sum/Avg tooltip on Dataset via `ag-cell-range-selected*` (always on)
 - **Formula autocomplete locked to the side** — reposition `ul.CodeMirror-hints` beside Cell Editor (always on)
 
 ## Recommended Next Commit Targets
 
-1. Implement **Higher contrast model cells** (see roadmap).
-2. Add import utility to ingest future `Shortkeys.txt` exports automatically.
-3. Improve diagnostics UI (view structured logs directly in options page).
-4. Add action validation helpers to catch malformed mapping definitions earlier.
+1. Add import utility to ingest future `Shortkeys.txt` exports automatically.
+2. Improve diagnostics UI (view structured logs directly in options page).
+3. Add action validation helpers to catch malformed mapping definitions earlier.
 
 Automated tests (`npm test`, `tests/`) and CI (`.github/workflows/ci.yml`) are in place: add a test with every change.
 

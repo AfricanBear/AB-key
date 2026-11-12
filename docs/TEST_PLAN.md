@@ -44,6 +44,9 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Dialog with a primary Save button open (e.g. dimensions modal): clicks Save in the dialog, not the builder Save behind it.
   - Other pages where Alt+S worked before: still works (fallback search).
 - Alt+A (hover a row so "+" is visible): opens the menu and clicks exactly "Create variable", never "Create group" / "Create section".
+- Darker values in model cells (Options → Features):
+  - On (default): model values are near-black instead of grey; pencil icons unchanged.
+  - Off: Abacum's default grey; switching applies to open tabs without reload.
 - Model-only hotkeys (Alt+E, Alt+A):
   - On `/app/modules*`: listed in the A+B key panel and working.
   - On Datasets, Dimensions, Versions: not listed in the panel; pressing them does nothing.

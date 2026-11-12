@@ -24,16 +24,19 @@
         <div class="feature-toggles">
           <label class="toggle-row">
             <input type="checkbox" id="abacumTabTitleEnabled" />
-            <span class="toggle-text">Abacum: show client name in tab title</span>
+            <span class="toggle-body">
+              <span class="toggle-text">Abacum: show client name in tab title</span>
+              <span class="toggle-hint">Open Abacum tabs may need a refresh for this to take effect.</span>
+            </span>
           </label>
-          <p class="hint">Open Abacum tabs may need to be refreshed for this setting to take effect.</p>
 
-          <div class="toggle-block">
-            <label class="toggle-row">
-              <input type="checkbox" id="lightThemeNavEnabled" />
+          <label class="toggle-row">
+            <input type="checkbox" id="lightThemeNavEnabled" />
+            <span class="toggle-body">
               <span class="toggle-text">Light theme nav</span>
-            </label>
-            <div class="toggle-preview" aria-hidden="true">
+              <span class="toggle-hint">Applies to all <code>*.abacum.io</code> pages. Refresh if the nav does not update immediately.</span>
+            </span>
+            <span class="toggle-preview" aria-hidden="true">
               <figure class="preview-item">
                 <img id="lightNavPreviewDefault" class="preview-img" alt="" width="36" height="36" />
                 <figcaption>Default</figcaption>
@@ -42,15 +45,23 @@
                 <img id="lightNavPreviewLight" class="preview-img" alt="" width="36" height="36" />
                 <figcaption>Light nav</figcaption>
               </figure>
-            </div>
-          </div>
-          <p class="hint">Applies to all <code>*.abacum.io</code> pages. Refresh if the nav does not update immediately.</p>
+            </span>
+          </label>
 
-          <p class="hint">Alt+1–5 click the right toolbar rail buttons by position (top to bottom). The rail content differs by object type (Models, Dimensions, Datasets, Versions); open the A+B key panel on a page to see what each hotkey does there.</p>
+          <label class="toggle-row">
+            <input type="checkbox" id="darkerModelValuesEnabled" />
+            <span class="toggle-body">
+              <span class="toggle-text">Darker values in model cells</span>
+              <span class="toggle-hint">Model values use the grid's near-black text instead of Abacum's grey. Applies to open Abacum tabs immediately.</span>
+            </span>
+          </label>
 
           <label class="toggle-row">
             <input type="checkbox" id="diagnosticsEnabled" />
-            <span class="toggle-text">Enable diagnostics logging</span>
+            <span class="toggle-body">
+              <span class="toggle-text">Enable diagnostics logging</span>
+              <span class="toggle-hint">Logs each hotkey lookup to the browser console and outlines the matched element.</span>
+            </span>
           </label>
         </div>
       </section>
@@ -64,6 +75,7 @@
             <button type="button" id="importBtn" class="btn btn-toolbar">Import</button>
           </div>
         </div>
+        <p class="hint">Alt+1–5 click the right toolbar rail buttons by position, top to bottom; the rail differs by object type. Open the A+B key panel on an Abacum page to see what each hotkey does there.</p>
         <label class="field-label" for="configJson">JSON</label>
         <textarea id="configJson" spellcheck="false"></textarea>
       </section>

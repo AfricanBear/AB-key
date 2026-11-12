@@ -5,6 +5,7 @@ const statusEl = document.getElementById("status");
 const diagnosticsToggle = document.getElementById("diagnosticsEnabled");
 const abacumTabTitleToggle = document.getElementById("abacumTabTitleEnabled");
 const lightThemeNavToggle = document.getElementById("lightThemeNavEnabled");
+const darkerModelValuesToggle = document.getElementById("darkerModelValuesEnabled");
 const brandLogo = document.getElementById("brandLogo");
 
 if (brandLogo) {
@@ -38,6 +39,7 @@ async function loadConfig() {
   diagnosticsToggle.checked = Boolean(config.diagnosticsEnabled);
   abacumTabTitleToggle.checked = config.abacumTabTitleEnabled !== false;
   lightThemeNavToggle.checked = Boolean(config.lightThemeNavEnabled);
+  darkerModelValuesToggle.checked = config.darkerModelValuesEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
   setStatus("Configuration loaded.");
 }
@@ -48,6 +50,7 @@ async function saveConfig() {
     parsed.diagnosticsEnabled = diagnosticsToggle.checked;
     parsed.abacumTabTitleEnabled = abacumTabTitleToggle.checked;
     parsed.lightThemeNavEnabled = lightThemeNavToggle.checked;
+    parsed.darkerModelValuesEnabled = darkerModelValuesToggle.checked;
     const migrated = migrateConfig(parsed);
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });
