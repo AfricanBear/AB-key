@@ -44,6 +44,12 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Dialog with a primary Save button open (e.g. dimensions modal): clicks Save in the dialog, not the builder Save behind it.
   - Other pages where Alt+S worked before: still works (fallback search).
 - Alt+A (hover a row so "+" is visible): opens the menu and clicks exactly "Create variable", never "Create group" / "Create section".
+- Selection sum in datasets (dataset → **Viewer** tab; the URL stays `/manager`):
+  - Select 2+ numeric cells (click, then Shift+click): tooltip shows count, Sum and Avg at the bottom-right of the selection.
+  - Mixed selection with dates/text: only numbers are counted.
+  - Click a single cell: tooltip disappears.
+  - Selection reaching the last rendered row while the grid can scroll: "Visible rows only".
+  - Models: no AB-key tooltip (Abacum's own one is unchanged). Toggle off in Options: no tooltip.
 - Darker values in model cells (Options → Features):
   - On (default): model values are near-black instead of grey; pencil icons unchanged.
   - Off: Abacum's default grey; switching applies to open tabs without reload.

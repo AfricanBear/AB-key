@@ -75,7 +75,7 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 Requires Node.js 22+. No dependencies to install.
 
 - `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
-- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+E / Alt+S / Alt+A, rail tooltip hints, and darker model values.
+- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+E / Alt+S / Alt+A, rail tooltip hints, darker model values, and the dataset selection sum.
 - The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
 
 CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
@@ -93,6 +93,13 @@ For Opera-labeled packaging:
 - `./scripts/package.ps1 -Target opera`
 
 ## Releases
+
+### v0.8.0
+
+- **Selection sum in datasets** (Options → Features, on by default). In a dataset's **Viewer** tab, select two or more cells to see a tooltip with the number of numeric values, **Sum** and **Avg**, at the bottom-right of the selection.
+  - Uses AG Grid's `ag-cell-range-selected*` classes; only on `/app/datasets…` (Models already have Abacum's own tooltip).
+  - Numbers are parsed strictly (`13065.0`, `-1,234.5`); dates, text and empty cells are skipped.
+  - AG Grid renders only rows near the viewport: if the selection may continue beyond them, the tooltip says "Visible rows only".
 
 ### v0.7.0
 
