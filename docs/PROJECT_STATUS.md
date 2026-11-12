@@ -92,7 +92,7 @@ Last updated: 2026-11-12
 
 - Manifest: `manifest.json`
 - Background worker: `src/background/service-worker.js`
-- Content scripts: `src/content/toolbar-rail.js`, `src/content/content-script.js`, `src/content/ab-key-panel-host.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`, `src/content/abacum-darker-values.js`
+- Content scripts: `src/content/toolbar-rail.js`, `src/content/content-script.js`, `src/content/ab-key-panel-host.js`, `src/content/abacum-tab-title.js`, `src/content/abacum-light-nav.js`, `src/content/abacum-darker-values.js`, `src/content/abacum-dataset-range-sum.js`
 - Config schema: `src/shared/config-schema.js`
 - Options UI: `src/options/options.html`, `src/options/options.js`
 - Popup UI: `src/popup/popup.html`, `src/popup/popup.js`, `src/popup/popup.css`
@@ -111,7 +111,6 @@ Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
 
 **Planned Abacum UI features** (see roadmap for detail):
 
-- **Dataset range selection sum** — Sum/Avg tooltip on Dataset via `ag-cell-range-selected*` (always on)
 - **Formula autocomplete locked to the side** — reposition `ul.CodeMirror-hints` beside Cell Editor (always on)
 
 ## Recommended Next Commit Targets

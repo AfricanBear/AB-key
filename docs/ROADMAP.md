@@ -4,50 +4,6 @@ Planned features not yet shipped. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) f
 
 ---
 
-## Dataset range selection sum tooltip
-
-**Status:** Planned  
-**Target:** `*.abacum.io` — **Dataset** pages only (not Model)
-
-### Problem
-
-On Dataset grids, selecting numeric cells does not show a quick **Sum** / **Avg** summary. On Model, Abacum already provides `[data-testid="range-selection-tooltip"]`; this feature avoids duplicating that on Model.
-
-### Goal
-
-When the user drag-selects cells on a Dataset page:
-
-1. Detect selection via AG Grid range classes: `ag-cell-range-selected`, `ag-cell-range-selected-1`, and any `ag-cell-range-selected*`.
-2. Parse numeric values from `.ag-cell-value` in those cells (skip non-numeric).
-3. Show a floating tooltip styled like Abacum’s native range tooltip: title (`N selected values`), **Sum**, **Avg**.
-
-**Constraints:** Always on (no options toggle). DOM-based only; no Abacum bundle hooks.
-
-### DOM anchors
-
-| Element | Selector |
-|---------|----------|
-| Grid | `.ag-root` |
-| Selected cells | `.ag-root .ag-cell[class*='ag-cell-range-selected']` |
-| Cell text | `.ag-cell-value` |
-
-### Implementation notes (when built)
-
-- New content script: `src/content/abacum-dataset-range-sum.js`
-- Manifest entry on `*://*.abacum.io/*`; page gate inside script, e.g. `pathname` matches `/datasets?/`
-- Triggers: `mouseup`/`pointerup` on grid + `MutationObserver` on cell `class` (debounced ~50–80 ms)
-- Tooltip: `data-testid="ab-key-range-selection-tooltip"`; dark panel; position at bottom-right of selection union rect
-- **Known limit:** AG Grid virtualizes rows — sum includes **visible** selected cells only
-
-### Test plan (draft)
-
-- [ ] Dataset: select two measure cells → correct Sum and Avg
-- [ ] Clear selection → tooltip hides
-- [ ] Model range select → AB-key tooltip does **not** appear (native Abacum tooltip unchanged)
-- [ ] No conflict with hotkeys, tab title, light nav
-
----
-
 ## Formula autocomplete locked to the side
 
 **Status:** Planned  

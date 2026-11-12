@@ -102,6 +102,7 @@ export const DEFAULT_CONFIG = {
   abacumTabTitleEnabled: true,
   lightThemeNavEnabled: false,
   darkerModelValuesEnabled: true,
+  datasetSelectionSumEnabled: true,
   commandBindings: {
     run_primary_action: "action.primary"
   },
@@ -321,6 +322,7 @@ export function migrateConfig(rawConfig) {
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;
   if (typeof next.darkerModelValuesEnabled !== "boolean") next.darkerModelValuesEnabled = DEFAULT_CONFIG.darkerModelValuesEnabled;
+  if (typeof next.datasetSelectionSumEnabled !== "boolean") next.datasetSelectionSumEnabled = DEFAULT_CONFIG.datasetSelectionSumEnabled;
   if (typeof next.diagnosticsEnabled !== "boolean") next.diagnosticsEnabled = DEFAULT_CONFIG.diagnosticsEnabled;
   validateConfigShape(next);
   return next;
