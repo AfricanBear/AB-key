@@ -137,6 +137,7 @@ export async function loadContentScript(config, page, { rail = [], nav = [] } = 
     },
     AbKeySidebarNav: {
       getLink: (position) => ({ element: nav[position - 1] || null, position, total: nav.length }),
+      listLinks: () => nav.map((link) => ({ link, button: link, name: link.name, label: link.name })),
       describe: () => nav.map((link, index) => ({ position: index + 1, label: link.name }))
     },
     AbKeyToolbarRail: {

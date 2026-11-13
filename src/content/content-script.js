@@ -556,15 +556,16 @@
   window.addEventListener("keydown", onKeyDown, true);
 
   // ---------------------------------------------------------------------------
-  // Rail tooltip hotkey hints: "Info" -> "Info · Alt+1"
+  // Tooltip hotkey hints: rail "Info" -> "Info · Alt+1", left nav "Models" -> "Models · Alt+Shift+2"
   // ---------------------------------------------------------------------------
   // Abacum shows a standard MUI tooltip (.MuiTooltip-popper[role=tooltip] > .MuiTooltip-tooltip)
-  // when a rail button is hovered. It has no aria link to the button, so the tooltip is matched
+  // when a rail or left navigation button is hovered. It has no aria link to the button, so the tooltip is matched
   // by text: its text must equal the hovered button's label. While the pointer stays on the
   // button we re-check a few times per second, because the tooltip appears after a delay and
   // React may re-render its text.
 
   const RAIL_BUTTON_SELECTOR = 'button[data-testid^="toolbar-rail-button-"]';
+  const NAV_BUTTON_SELECTOR = '[data-testid^="sidebar-section-button-"]';
   const HINT_ATTR = "data-ab-key-hotkey-hint";
   const HINT_POLL_MS = 100;
   const HINT_MAX_MS = 5000;
@@ -577,23 +578,37 @@
       .join("+");
   }
 
-  function hotkeyForRailPosition(position) {
+  /** Hotkey of the first enabled action whose locator matches, e.g. "Alt+3". */
+  function hotkeyForLocator(matches) {
     const host = window.location.hostname;
     for (const hotkey of config?.hotkeys || []) {
       if (!hostAllowed(hotkey.hosts, host)) continue;
       const action = findAction(hotkey.actionId);
-      if (action?.locatorProfile?.toolbarRail?.position === position) return formatHotkey(hotkey.key);
+      if (action && matches(action.locatorProfile || {})) return formatHotkey(hotkey.key);
     }
     return null;
   }
 
   function railHintFor(button) {
     const rail = globalThis.AbKeyToolbarRail;
-    if (!rail) return null;
+    if (!rail || !button) return null;
     const position = rail.listButtons().buttons.indexOf(button) + 1;
     if (position < 1) return null; // e.g. the AI agent button, which is not numbered
-    const hotkey = hotkeyForRailPosition(position);
+    const hotkey = hotkeyForLocator((profile) => profile.toolbarRail?.position === position);
     const label = rail.labelOf(button);
+    return hotkey && label ? { label, hotkey } : null;
+  }
+
+  // Left navigation (Alt+Shift+1–9): Abacum's tooltip shows the button's aria-label ("Models").
+  function navHintFor(button) {
+    const nav = globalThis.AbKeySidebarNav;
+    if (!nav || !button) return null;
+    const items = nav.listLinks();
+    const index = items.findIndex((item) => item.button === button);
+    if (index < 0) return null; // Library, More, Help & support…: not numbered
+    const position = index + 1;
+    const hotkey = hotkeyForLocator((profile) => profile.sidebarNav?.position === position);
+    const label = items[index].label;
     return hotkey && label ? { label, hotkey } : null;
   }
 
@@ -622,9 +637,11 @@
   }
 
   function onRailPointerOver(event) {
-    const button = event.target?.closest?.(RAIL_BUTTON_SELECTOR);
-    if (!button) return;
-    const hint = railHintFor(button);
+    const railButton = event.target?.closest?.(RAIL_BUTTON_SELECTOR) || null;
+    const navButton = event.target?.closest?.(NAV_BUTTON_SELECTOR) || null;
+    if (!railButton && !navButton) return;
+    const button = railButton || navButton;
+    const hint = railHintFor(railButton) || navHintFor(navButton);
     stopRailHint();
     if (!hint) return;
     const startedAt = Date.now();

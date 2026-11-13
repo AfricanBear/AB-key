@@ -44,3 +44,34 @@ test("a rebound rail hotkey is shown", async () => {
   config.hotkeys.find((item) => item.actionId === "action.rail1").key = "alt+shift+i";
   assert.equal((await hoverRail(0, "Info", config)).textContent, "Info · Alt+Shift+I");
 });
+
+// --- left navigation (Alt+Shift+1–9) ----------------------------------------------------
+
+const NAV = ["Spaces", "Models", "Versions", "Dimensions", "Datasets", "Integrations"];
+
+async function hoverNav(target, tooltipText, config = createDefaultConfig()) {
+  const tooltip = createTooltip(tooltipText);
+  const page = createPage({ tooltips: [tooltip] });
+  const nav = NAV.map((name) => page.element(name));
+  const rail = DATASET_RAIL.map((name) => page.element(name));
+  const script = await loadContentScript(config, page, { rail, nav });
+  script.hover(typeof target === "number" ? nav[target] : target);
+  await sleep(350);
+  return tooltip.inner;
+}
+
+test("hovering a left navigation link adds its Alt+Shift hotkey", async () => {
+  assert.equal((await hoverNav(1, "Models")).textContent, "Models · Alt+Shift+2");
+  assert.equal((await hoverNav(5, "Integrations")).textContent, "Integrations · Alt+Shift+6");
+});
+
+test("unnumbered sidebar buttons (Library, More, Help) get no hint", async () => {
+  const page = createPage();
+  assert.equal((await hoverNav(page.element("Library"), "Library")).textContent, "Library");
+});
+
+test("no nav hint when its hotkey was removed", async () => {
+  const config = createDefaultConfig();
+  config.hotkeys = config.hotkeys.filter((item) => item.key !== "alt+shift+1");
+  assert.equal((await hoverNav(0, "Spaces", config)).textContent, "Spaces");
+});
