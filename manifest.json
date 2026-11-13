@@ -13,7 +13,7 @@
   "content_scripts": [
     {
       "matches": ["*://*.abacum.io/*"],
-      "js": ["src/content/toolbar-rail.js", "src/content/content-script.js", "src/content/ab-key-panel-host.js"],
+      "js": ["src/content/toolbar-rail.js", "src/content/sidebar-nav.js", "src/content/content-script.js", "src/content/ab-key-panel-host.js"],
       "css": ["src/content/ab-key-panel-host.css"],
       "run_at": "document_idle"
     },

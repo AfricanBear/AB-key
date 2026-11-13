@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 6;
+export const CURRENT_CONFIG_VERSION = 7;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -33,6 +33,28 @@ function buildRailAction(position) {
 
 function buildRailHotkey(position) {
   return { key: `alt+${position}`, actionId: railActionId(position), hosts: [...ABACUM_HOSTS] };
+}
+
+// Left navigation (Alt+Shift+1–9): section links after "Library", by position, "More"
+// skipped. See src/content/sidebar-nav.js. Positions beyond the current number of links
+// do nothing, so new Abacum sections get a hotkey without a config change.
+export const NAV_POSITIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+export const navActionId = (position) => `action.nav${position}`;
+export const isNavActionId = (actionId) => /^action\.nav[1-9]$/.test(actionId || "");
+
+function buildNavAction(position) {
+  return {
+    actionId: navActionId(position),
+    label: `Navigation link ${position}`,
+    enabled: true,
+    scope: { hosts: [...ABACUM_HOSTS] },
+    locatorProfile: { sidebarNav: { position } },
+    executionPolicy: { timeoutMs: 1000, retryPolicy: { attempts: 3, intervalMs: 200, useMutationObserver: true } }
+  };
+}
+
+function buildNavHotkey(position) {
+  return { key: `alt+shift+${position}`, actionId: navActionId(position), hosts: [...ABACUM_HOSTS] };
 }
 
 // v1 label-based rail actions, replaced by positional rail actions in v2.
@@ -96,6 +118,104 @@ const LEGACY_ADD_CREATE_STEPS = [
   }
 ];
 
+// Alt+Q: AI chat toggle (bottom of the right rail; a second click closes the chat).
+const AI_CHAT_ACTION = {
+  actionId: "action.aiChat",
+  label: "AI chat",
+  enabled: true,
+  scope: { hosts: [...ABACUM_HOSTS] },
+  locatorProfile: { preferredSelectors: ["button[data-testid='toolbar-rail-button-ai-agent']"], preferredOnly: true },
+  executionPolicy: { timeoutMs: 1500, retryPolicy: { attempts: 6, intervalMs: 200, useMutationObserver: true } }
+};
+
+// Alt+H: Help & support -> "Abacum Academy" (Abacum opens academy.abacum.io in a new tab).
+const HELP_MENU_ITEMS = "[data-testid='help-and-support-contextual-menu'] [role='menuitem']";
+const ACADEMY_STEPS = [
+  { locatorProfile: { preferredSelectors: ["[data-testid='sidebar-section-button-HelpAndSupport']"], preferredOnly: true } },
+  {
+    locatorProfile: {
+      preferredSelectors: [HELP_MENU_ITEMS],
+      textCriteria: { mode: "exact", value: "Abacum Academy", caseSensitive: false },
+      preferredOnly: true
+    }
+  }
+];
+
+// Alt+R / Alt+C: the focused variable row's context menu (right-click on its name cell).
+// AG Grid marks the focused row in every column container with ag-row-focus; the name cell
+// lives in the pinned-left one.
+const FOCUSED_VARIABLE_NAME = ".ag-row.variable-row.ag-row-focus [col-id='name']";
+const ROW_MENU_ITEMS = "[data-testid='mb-contextual-menu'] [role='menuitem']";
+const rowMenuSteps = (item) => [
+  { trigger: "contextmenu", locatorProfile: { preferredSelectors: [FOCUSED_VARIABLE_NAME], preferredOnly: true } },
+  {
+    locatorProfile: {
+      preferredSelectors: [ROW_MENU_ITEMS],
+      textCriteria: { mode: "exact", value: item, caseSensitive: false },
+      preferredOnly: true
+    }
+  }
+];
+const ROW_ACTION_POLICY = { timeoutMs: 2000, retryPolicy: { attempts: 8, intervalMs: 200, useMutationObserver: true } };
+
+const RENAME_VARIABLE_ACTION = {
+  actionId: "action.renameVariable",
+  label: "Rename variable",
+  enabled: true,
+  scope: { hosts: [...ABACUM_HOSTS] },
+  // Unused while executionPolicy.steps is set; kept for the schema (required field).
+  locatorProfile: structuredClone(rowMenuSteps("Rename variable")[0].locatorProfile),
+  executionPolicy: { ...structuredClone(ROW_ACTION_POLICY), steps: rowMenuSteps("Rename variable") }
+};
+
+// Duplicate is saved by Abacum immediately. Ticked rows (bulk toolbar) win over the focused row.
+const BULK_DUPLICATE = "[data-testid='model-builder-bulk-actions-toolbar'] button[aria-label='duplicate-variables']";
+const DUPLICATE_VARIABLE_ACTION = {
+  actionId: "action.duplicateVariable",
+  label: "Duplicate variable",
+  enabled: true,
+  scope: { hosts: [...ABACUM_HOSTS] },
+  // Unused while executionPolicy.alternatives is set; kept for the schema (required field).
+  locatorProfile: { preferredSelectors: [BULK_DUPLICATE], preferredOnly: true },
+  executionPolicy: {
+    ...structuredClone(ROW_ACTION_POLICY),
+    alternatives: [
+      { steps: [{ locatorProfile: { preferredSelectors: [BULK_DUPLICATE], preferredOnly: true } }] },
+      { steps: rowMenuSteps("Duplicate variable") }
+    ]
+  }
+};
+
+const ACADEMY_ACTION = {
+  actionId: "action.academy",
+  label: "Abacum Academy",
+  enabled: true,
+  scope: { hosts: [...ABACUM_HOSTS] },
+  // Unused while executionPolicy.steps is set; kept for the schema (required field).
+  locatorProfile: structuredClone(ACADEMY_STEPS[0].locatorProfile),
+  executionPolicy: {
+    timeoutMs: 2000,
+    retryPolicy: { attempts: 8, intervalMs: 200, useMutationObserver: true },
+    steps: structuredClone(ACADEMY_STEPS)
+  }
+};
+
+// Added in schema v7 (hotkeys from the Notion backlog).
+const V7_ACTIONS = [
+  ...NAV_POSITIONS.map(buildNavAction),
+  AI_CHAT_ACTION,
+  ACADEMY_ACTION,
+  RENAME_VARIABLE_ACTION,
+  DUPLICATE_VARIABLE_ACTION
+];
+const V7_HOTKEYS = [
+  ...NAV_POSITIONS.map(buildNavHotkey),
+  { key: "alt+q", actionId: "action.aiChat", hosts: [...ABACUM_HOSTS] },
+  { key: "alt+h", actionId: "action.academy", hosts: [...ABACUM_HOSTS] },
+  { key: "alt+r", actionId: "action.renameVariable", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
+  { key: "alt+c", actionId: "action.duplicateVariable", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }
+];
+
 export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
   diagnosticsEnabled: false,
@@ -110,7 +230,8 @@ export const DEFAULT_CONFIG = {
     ...RAIL_POSITIONS.map(buildRailHotkey),
     { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
     { key: "alt+s", actionId: "action.save", hosts: [...ABACUM_HOSTS] },
-    { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }
+    { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
+    ...structuredClone(V7_HOTKEYS)
   ],
   actions: [
     {
@@ -167,7 +288,8 @@ export const DEFAULT_CONFIG = {
         retryPolicy: { attempts: 10, intervalMs: 200, useMutationObserver: true },
         steps: structuredClone(ADD_CREATE_STEPS)
       }
-    }
+    },
+    ...structuredClone(V7_ACTIONS)
   ]
 };
 
@@ -296,6 +418,22 @@ function migrateV5ToV6(v5) {
   return next;
 }
 
+// v6 -> v7: hotkeys from the Notion backlog — Alt+Shift+1–9 (left navigation), Alt+Q (AI
+// chat), Alt+H (Abacum Academy), Alt+R / Alt+C (rename / duplicate the focused variable).
+// Missing actions are added; a hotkey is added only if the user has nothing on that key.
+function migrateV6ToV7(v6) {
+  const next = structuredClone(v6);
+  next.hotkeys = next.hotkeys || [];
+  for (const action of V7_ACTIONS) {
+    if (!next.actions.some((item) => item.actionId === action.actionId)) next.actions.push(structuredClone(action));
+  }
+  for (const hotkey of V7_HOTKEYS) {
+    if (!next.hotkeys.some((item) => item.key === hotkey.key)) next.hotkeys.push(structuredClone(hotkey));
+  }
+  next.configVersion = 7;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -318,6 +456,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 6) {
     next = migrateV5ToV6(next);
+  }
+  if (version < 7) {
+    next = migrateV6ToV7(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;

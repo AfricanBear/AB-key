@@ -1,4 +1,4 @@
-import { CONFIG_KEY, isRailActionId, migrateConfig } from "../shared/config-schema.js";
+import { CONFIG_KEY, isNavActionId, isRailActionId, migrateConfig } from "../shared/config-schema.js";
 
 const hotkeyList = document.getElementById("hotkeyList");
 const emptyState = document.getElementById("emptyState");
@@ -9,6 +9,8 @@ const panelHostname = panelParams.get("host") || "app.abacum.io";
 const panelPathname = panelParams.get("path");
 // Labels of the right toolbar rail on the current page (top to bottom), or null if unknown.
 const railLabels = parseRailLabels(panelParams.get("rail"));
+// Labels of the left navigation links after Library (Alt+Shift+1–9), or null if unknown.
+const navLabels = parseRailLabels(panelParams.get("nav"));
 
 function parseRailLabels(raw) {
   if (!raw) return null;
@@ -31,6 +33,14 @@ function railRowLabel(action) {
   const label = railLabels[position - 1];
   if (label === undefined) return null; // no such button on this page
   return label || `Rail button ${position}`;
+}
+
+function navRowLabel(action) {
+  const position = action.locatorProfile?.sidebarNav?.position;
+  if (!navLabels) return `Navigation link ${position}`;
+  const label = navLabels[position - 1];
+  if (label === undefined) return null; // fewer links on this page
+  return `Go to ${label || `link ${position}`}`;
 }
 
 function shortLabel(action) {
@@ -85,7 +95,11 @@ function renderBindings(hotkeys, actions, hostname, pathname) {
     .map((binding) => {
       const action = actionById.get(binding.actionId);
       if (!action || !action.enabled) return null;
-      const label = isRailActionId(action.actionId) ? railRowLabel(action) : shortLabel(action);
+      const label = isRailActionId(action.actionId)
+        ? railRowLabel(action)
+        : isNavActionId(action.actionId)
+          ? navRowLabel(action)
+          : shortLabel(action);
       if (!label) return null;
       return {
         label,

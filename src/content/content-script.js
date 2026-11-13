@@ -1,6 +1,6 @@
 // AB-key content script: hotkey listener + click engine.
 // Classic script (Chrome does not support ES-module content scripts in the manifest).
-// Depends on src/content/toolbar-rail.js, loaded before this file.
+// Depends on src/content/toolbar-rail.js and src/content/sidebar-nav.js, loaded before this file.
 (function () {
   "use strict";
 
@@ -215,6 +215,18 @@
     };
   }
 
+  function selectNavCandidate(locatorProfile) {
+    const nav = globalThis.AbKeySidebarNav;
+    const position = Number(locatorProfile.sidebarNav.position);
+    if (!nav || !Number.isInteger(position) || position < 1) {
+      return { candidate: null, railInfo: { position, source: nav ? "invalid-position" : "nav-script-missing" } };
+    }
+    const found = nav.getLink(position);
+    const railInfo = { position, source: "sidebar", total: found.total };
+    if (!found.element) return { candidate: null, railInfo };
+    return { candidate: { element: found.element, score: 1000, strategyTag: "sidebar-nav" }, railInfo };
+  }
+
   // preferredSelectors are tried strictly in order before the scored search. The first
   // element that is visible, enabled, matches textCriteria (if any) and is not covered by
   // another node wins. This lets a profile say "Save inside an open dialog first, then the
@@ -241,9 +253,12 @@
     // Toolbar rail is positional only: never fall back to a page-wide search,
     // otherwise Alt+N could click an unrelated button with a similar label.
     if (locatorProfile?.toolbarRail) return selectRailCandidate(locatorProfile);
+    if (locatorProfile?.sidebarNav) return selectNavCandidate(locatorProfile);
 
     const preferred = selectPreferredCandidate(locatorProfile);
     if (preferred) return { candidate: preferred };
+    // Strict profiles (menu items, row actions) must never fall back to a page-wide search.
+    if (locatorProfile?.preferredOnly) return { candidate: null };
 
     const scored = collectCandidates(locatorProfile).sort((a, b) => b.score - a.score);
     if (!scored.length) return { candidate: null };
@@ -286,10 +301,25 @@
     return { ok: true };
   }
 
-  function clickElement(element) {
+  // trigger "contextmenu" opens the element's right-click menu instead of clicking it
+  // (Abacum's variable row menu: Rename / Duplicate variable).
+  function clickElement(element, trigger) {
     const guard = ensureInteractable(element);
     if (!guard.ok) return guard;
-    element.click();
+    if (trigger === "contextmenu") {
+      const rect = element.getBoundingClientRect();
+      element.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: rect.left + Math.min(20, rect.width / 2),
+          clientY: rect.top + rect.height / 2
+        })
+      );
+    } else {
+      element.click();
+    }
     return { ok: true };
   }
 
@@ -333,6 +363,18 @@
   // Action execution
   // ---------------------------------------------------------------------------
 
+  async function chooseAlternative(alternatives, profile, deadline, intervalMs, retry) {
+    for (;;) {
+      for (const alternative of alternatives) {
+        const first = alternative?.steps?.[0];
+        if (!first) continue;
+        if (selectBestCandidate(first.locatorProfile || profile).candidate) return alternative;
+      }
+      if (Date.now() >= deadline) return null;
+      await waitForMutationOrDelay(intervalMs, Boolean(retry.useMutationObserver));
+    }
+  }
+
   async function executeAction(payload) {
     const started = performance.now();
     const elapsed = () => Math.round(performance.now() - started);
@@ -344,13 +386,25 @@
     debugLog(diagnosticsEnabled, "Executing action", { actionId });
     runPreActions(policy.preActions);
 
-    const steps = policy.steps?.length ? policy.steps : [{ locatorProfile: profile }];
+    let steps = policy.steps?.length ? policy.steps : [{ locatorProfile: profile }];
     const retry = policy.retryPolicy || {};
     const maxAttempts = Math.max(1, retry.attempts || 1);
     const intervalMs = Math.max(MIN_RETRY_WAIT_MS, retry.intervalMs || 200);
     const timeoutMs = Math.max(intervalMs, policy.timeoutMs || 1500);
     const deadline = Date.now() + timeoutMs;
     let lastError = null;
+
+    // alternatives: [{ steps }, …] — run the first one whose first step finds its element
+    // (e.g. Duplicate: the bulk toolbar when rows are ticked, else the focused row's menu).
+    if (policy.alternatives?.length) {
+      const chosen = await chooseAlternative(policy.alternatives, profile, deadline, intervalMs, retry);
+      if (!chosen) {
+        const error = { code: ErrorCode.ElementNotFound, message: "No alternative of this action applies on this page." };
+        debugLog(diagnosticsEnabled, "Action failed", { actionId, error, elapsedMs: elapsed() });
+        return { ok: false, error, elapsedMs: elapsed() };
+      }
+      steps = chosen.steps;
+    }
 
     for (const step of steps) {
       const stepProfile = step.locatorProfile || profile;
@@ -376,7 +430,7 @@
 
         if (candidate?.element) {
           if (diagnosticsEnabled) showDebugOutline(candidate.element);
-          const clickResult = clickElement(candidate.element);
+          const clickResult = clickElement(candidate.element, step.trigger);
           if (clickResult.ok) {
             debugLog(diagnosticsEnabled, "Click succeeded", {
               actionId,
@@ -398,7 +452,9 @@
             code: ErrorCode.ElementNotFound,
             message: stepProfile.toolbarRail
               ? `No toolbar rail button at position ${stepProfile.toolbarRail.position} on this page.`
-              : "No matching element found.",
+              : stepProfile.sidebarNav
+                ? `No navigation link at position ${stepProfile.sidebarNav.position}.`
+                : "No matching element found.",
             details: selection.railInfo || undefined
           };
           debugLog(diagnosticsEnabled, "No matching element found", { actionId, attempt, rail: selection.railInfo || null });

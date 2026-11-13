@@ -97,3 +97,88 @@ test("Alt+A clicks '+' then exactly 'Create variable', whatever the menu order",
   Object.assign(page.dom, { [ADD_BUTTON]: [page.element("+", { text: "" })], [ADD_MENU_ITEMS]: items, ".MuiMenuItem-root": items });
   assert.deepEqual(await pressOn(page, "KeyA"), ["+", "Create variable"]);
 });
+
+// --- v7: hotkeys from the Notion backlog ------------------------------------------------
+
+const AI_BUTTON = "button[data-testid='toolbar-rail-button-ai-agent']";
+const HELP_BUTTON = "[data-testid='sidebar-section-button-HelpAndSupport']";
+const HELP_ITEMS = "[data-testid='help-and-support-contextual-menu'] [role='menuitem']";
+const FOCUSED_NAME = ".ag-row.variable-row.ag-row-focus [col-id='name']";
+const ROW_MENU_ITEMS = "[data-testid='mb-contextual-menu'] [role='menuitem']";
+const BULK_DUPLICATE = "[data-testid='model-builder-bulk-actions-toolbar'] button[aria-label='duplicate-variables']";
+const ROW_MENU = ["Copy link", "Rename variable", "Duplicate variable", "Delete variable"];
+
+async function pressKey(page, code, { modifiers = {}, nav = [], wait = 400 } = {}) {
+  const script = await loadContentScript(createDefaultConfig(), page, { nav });
+  script.press(code, code.slice(-1).toLowerCase(), modifiers);
+  await sleep(wait);
+  return page.clicks;
+}
+
+test("Alt+Shift+N clicks the N-th navigation link after Library", async () => {
+  const page = createPage();
+  const nav = ["Spaces", "Models", "Versions", "Dimensions", "Datasets", "Integrations"].map((name) => page.element(name));
+  assert.deepEqual(await pressKey(page, "Digit4", { nav, modifiers: { shiftKey: true } }), ["Dimensions"]);
+});
+
+test("Alt+Shift+N clicks nothing when there are fewer links (no page-wide fallback)", async () => {
+  const page = createPage();
+  page.dom["*"] = [page.element("Integrations")];
+  const nav = [page.element("Spaces"), page.element("Models")];
+  assert.deepEqual(await pressKey(page, "Digit7", { nav, modifiers: { shiftKey: true }, wait: 1300 }), []);
+});
+
+test("Alt+Q toggles the AI chat button and nothing else", async () => {
+  const page = createPage();
+  page.dom[AI_BUTTON] = [page.element("AI agent", { text: "" })];
+  page.dom["*"] = [page.element("Ask Abra")];
+  assert.deepEqual(await pressKey(page, "KeyQ"), ["AI agent"]);
+
+  const noButton = createPage();
+  noButton.dom["*"] = [noButton.element("Ask Abra")];
+  assert.deepEqual(await pressKey(noButton, "KeyQ", { wait: 1700 }), [], "no fallback to other AI buttons");
+});
+
+test("Alt+H opens Help & support, then exactly 'Abacum Academy'", async () => {
+  const page = createPage({ pathname: "/app/spaces/1" });
+  const items = ["Contact support team", "Abacum Academy", "View my tickets"].map((name) => page.element(name, { role: "menuitem" }));
+  Object.assign(page.dom, { [HELP_BUTTON]: [page.element("Help & support")], [HELP_ITEMS]: items });
+  assert.deepEqual(await pressKey(page, "KeyH"), ["Help & support", "Abacum Academy"]);
+});
+
+test("Alt+R right-clicks the focused variable's name, then 'Rename variable'", async () => {
+  const page = createPage();
+  const items = ROW_MENU.map((name) => page.element(name, { role: "menuitem" }));
+  Object.assign(page.dom, { [FOCUSED_NAME]: [page.element("Revenue")], [ROW_MENU_ITEMS]: items });
+  assert.deepEqual(await pressKey(page, "KeyR"), ["contextmenu:Revenue", "Rename variable"]);
+});
+
+test("Alt+R does nothing without a focused variable row, even if the text is on the page", async () => {
+  const page = createPage();
+  page.dom["*"] = [page.element("Rename variable"), page.element("Revenue")];
+  assert.deepEqual(await pressKey(page, "KeyR", { wait: 2300 }), []);
+});
+
+test("Alt+C duplicates the focused variable through its row menu", async () => {
+  const page = createPage();
+  const items = ROW_MENU.map((name) => page.element(name, { role: "menuitem" }));
+  Object.assign(page.dom, { [FOCUSED_NAME]: [page.element("Revenue")], [ROW_MENU_ITEMS]: items });
+  assert.deepEqual(await pressKey(page, "KeyC"), ["contextmenu:Revenue", "Duplicate variable"]);
+});
+
+test("Alt+C uses the bulk Duplicate button when rows are ticked", async () => {
+  const page = createPage();
+  const items = ROW_MENU.map((name) => page.element(name, { role: "menuitem" }));
+  Object.assign(page.dom, {
+    [BULK_DUPLICATE]: [page.element("Duplicate (2)")],
+    [FOCUSED_NAME]: [page.element("Revenue")],
+    [ROW_MENU_ITEMS]: items
+  });
+  assert.deepEqual(await pressKey(page, "KeyC"), ["Duplicate (2)"], "no row menu opened");
+});
+
+test("Alt+C does nothing when no variable is focused or ticked", async () => {
+  const page = createPage();
+  page.dom["*"] = [page.element("Duplicate variable")];
+  assert.deepEqual(await pressKey(page, "KeyC", { wait: 2300 }), []);
+});
