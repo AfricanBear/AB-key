@@ -22,7 +22,7 @@ The extension is built on Chromium Manifest V3 APIs, which Opera supports.
 
 - Some shortcuts may conflict with Opera defaults; users should rebind in `opera://extensions/shortcuts`.
 - Content scripts cannot run on browser-internal pages (for example `opera://*`, extension store pages, and other restricted URLs).
-- Host permission warning text in Opera may be broad because `<all_urls>` is enabled.
+- Host permissions are limited to `*://*.abacum.io/*` (since v0.8.1); the panel opens on other sites through `activeTab` on click.
 
 ## No-Change Items
 
