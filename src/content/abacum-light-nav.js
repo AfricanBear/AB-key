@@ -102,12 +102,33 @@ ${lavenderAccentSelectors} svg {
     return Boolean(config?.lightThemeNavEnabled);
   }
 
+  // Abacum is a React app and may rebuild <head>; re-add the style if it disappears.
+  // Only <head> children are watched, and only while the feature is on. (Previously the whole
+  // document's class changes were observed even when the feature was off — expensive on
+  // AG Grid pages, which change classes constantly.)
+  let observer = null;
+
+  function startObserver() {
+    if (observer) return;
+    observer = new MutationObserver(() => {
+      if (!getStyleEl()) ensureStyleEl();
+    });
+    observer.observe(document.head || document.documentElement, { childList: true });
+  }
+
+  function stopObserver() {
+    observer?.disconnect();
+    observer = null;
+  }
+
   function enable() {
     ensureStyleEl();
     document.documentElement.setAttribute(ROOT_ATTR, "true");
+    startObserver();
   }
 
   function disable() {
+    stopObserver();
     removeStyleEl();
   }
 
@@ -125,22 +146,8 @@ ${lavenderAccentSelectors} svg {
     applySetting();
   }
 
-  function startObserver() {
-    const observer = new MutationObserver(() => {
-      if (!document.documentElement.hasAttribute(ROOT_ATTR)) return;
-      ensureStyleEl();
-    });
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class"]
-    });
-  }
-
   function init() {
     applySetting();
-    startObserver();
     chrome.storage.onChanged.addListener(onConfigChanged);
   }
 

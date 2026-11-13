@@ -53,4 +53,3 @@ Hints are appended outside the editor; CodeMirror resets position on each keystr
 
 - Shortkeys.txt import utility
 - Diagnostics panel in options
-- Narrow `host_permissions` from `<all_urls>` where possible

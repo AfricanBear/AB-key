@@ -123,7 +123,6 @@ Automated tests (`npm test`, `tests/`) and CI (`.github/workflows/ci.yml`) are i
 
 ## Open Risks / Follow-ups
 
-- `host_permissions` currently use `<all_urls>`; evaluate narrowing scope for production.
 - Cross-origin iframes and browser-restricted pages remain non-automatable by design.
 - Hotkey collisions can occur across OS/browser profiles; document a rebinding policy.
 

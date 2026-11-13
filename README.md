@@ -50,15 +50,15 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 ## Quick Start
 
 1. Open `chrome://extensions`.
-2. Enable Developer mode.
-3. Click Load unpacked and select this folder.
-4. Open Extension options page and configure mappings.
-5. Use command hotkeys from `manifest.json` and verify action logs.
+2. Turn on **Developer mode** (toggle in the top-right corner). This is required: AB-key is not published in the Chrome Web Store, and the **Load unpacked** button only appears in Developer mode.
+3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
+4. Open an Abacum page and click the extension icon to see the hotkeys for that page. Features can be switched on or off in the extension options.
+5. To update: `git pull`, then click **Reload** on the AB-key card in `chrome://extensions` and refresh open Abacum tabs.
 
 ## Quick Guide (Opera)
 
 1. Open `opera://extensions`.
-2. Enable **Developer mode**.
+2. Turn on **Developer mode** — required for **Load unpacked**, same as in Chrome.
 3. Click **Load unpacked** and choose `C:\Users\kuzne\AB-key`.
 4. Open extension details, then open **Extension options** to review mappings.
 5. Open `opera://extensions/shortcuts` and confirm hotkeys are not conflicting.
@@ -93,6 +93,13 @@ For Opera-labeled packaging:
 - `./scripts/package.ps1 -Target opera`
 
 ## Releases
+
+### v0.8.1
+
+- **Lighter on resources.** Content scripts and host permissions are limited to `*.abacum.io` (were `<all_urls>`); the A+B key panel still opens on other sites when you click the icon.
+- **Light theme nav** no longer watches every class change on the page; it observes only `<head>`, and only while the feature is on.
+- **Client name in tab title** no longer runs a 1-second timer and a whole-page observer; it watches only `<title>` and retries briefly until the client logo has loaded.
+- `npm test` has a 30 s per-test timeout, so a hanging test cannot block CI.
 
 ### v0.8.0
 
