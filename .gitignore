@@ -2,3 +2,4 @@ dist/
 *.tmp
 Thumbs.db
 .DS_Store
+logs/
