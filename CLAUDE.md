@@ -19,7 +19,7 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `content-script.js` — hotkeys + click engine (`preferredSelectors` → scored search).
   - `toolbar-rail.js` — right toolbar buttons by position (`globalThis.AbKeyToolbarRail`).
   - `ab-key-panel-host.js` — in-page A+B key panel (iframe of `src/popup/popup.html`).
-  - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum.
+  - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints.
 - `src/shared/config-schema.js` — defaults + migrations (schema v6). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
@@ -39,6 +39,10 @@ Abacum releases.
   `testid-builder-add-button-anywhere` (only visible on row hover) and its menu
   `testid-builder-add-dropdown-anywhere` (Create variable / group / section).
   Value cells: `[data-testid="value-cell"]`. Edit-dimensions modal: `module-builder-dbv-modal`.
+- Formula Cell Editor: `.ag-popup-editor[role=dialog]` (no `aria-label`) with
+  `[data-testid="testid-codemirror"]` (CodeMirror 5). Hints `ul.CodeMirror-hints#cm-complete-N`
+  live in `<body>` and are **re-created on every keystroke** (inline `left/top`); CodeMirror
+  rewrites that style on editor scroll.
 - Datasets: data is in the **Viewer** tab; the URL stays `/app/datasets/<id>/manager`
   (`/viewer` is a 404). AG Grid range selection: `ag-cell-range-selected*`.
 - Model pages: `/app/modules/...`. `<title>` lives in `<head>` and changes on in-app navigation.
