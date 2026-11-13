@@ -53,6 +53,13 @@ When changing the config schema, add a migration test to `tests/config-migration
 - Darker values in model cells (Options → Features):
   - On (default): model values are near-black instead of grey; pencil icons unchanged.
   - Off: Abacum's default grey; switching applies to open tabs without reload.
+- Formula hints beside the Cell Editor (Models, double-click a Logic cell):
+  - Operators list on open and Variable list after typing a letter appear to the right of the editor, top-aligned; the formula text is not covered.
+  - Typing more letters and arrow keys: the list stays beside the editor.
+  - Clicking a hint inserts it; the next list appears in the same place.
+  - Editor near the right edge of a narrow window: list on the left of the editor.
+  - Cancel / Apply / Esc: no AB-key work continues (no observers), Save state unchanged by the script.
+  - Dataset selection-sum tooltip and other dropdowns unaffected.
 - Model-only hotkeys (Alt+E, Alt+A):
   - On `/app/modules*`: listed in the A+B key panel and working.
   - On Datasets, Dimensions, Versions: not listed in the panel; pressing them does nothing.
