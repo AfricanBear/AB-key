@@ -57,6 +57,7 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Alt+Shift+7–9 do nothing while there are only six links; "More" is never opened.
   - With a physical keyboard: Alt+Shift does not switch the Windows input language instead.
   - A+B key panel lists "Go to Spaces" … "Go to Integrations".
+  - Hovering a numbered link shows "Models · Alt+Shift+2" etc.; Library, More, Help & support tooltips are unchanged.
 - Alt+Q: opens the AI chat; pressed again (also with the cursor in the chat input) closes it.
 - Alt+H: opens Abacum Academy in a new tab; the Help & support menu does not stay open.
 - Alt+R (models): click any cell of a variable row, Alt+R → the name field opens with the current name; Esc cancels, Save stays disabled. Without a focused variable row nothing happens.

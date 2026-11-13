@@ -98,7 +98,7 @@ For Opera-labeled packaging:
 
 New hotkeys (config schema v7; a key you already use for your own action is not taken over):
 
-- **Alt+Shift+1–9: left navigation.** The N-th section link after Library — today Spaces, Models, Versions, Dimensions, Datasets, Integrations. "More" (a menu) and the bottom items are skipped. Positions are read from the page on every keypress, so new sections or links that move out of "More" get a number without an update. The A+B key panel shows them as "Go to …".
+- **Alt+Shift+1–9: left navigation.** The N-th section link after Library — today Spaces, Models, Versions, Dimensions, Datasets, Integrations. "More" (a menu) and the bottom items are skipped. Positions are read from the page on every keypress, so new sections or links that move out of "More" get a number without an update. The A+B key panel shows them as "Go to …", and hovering a link adds the key to its tooltip ("Models · Alt+Shift+2").
 - **Alt+Q: AI chat** on/off (the button at the bottom of the right rail). Works from inside the chat input too.
 - **Alt+H: Abacum Academy** — opens Help & support → Abacum Academy, which Abacum opens in a new tab.
 - **Alt+R: rename variable** (models). Opens the name field of the variable whose row has the focused cell — same as right-click → Rename variable. Esc cancels.
