@@ -1,6 +1,6 @@
 // AB-key content script: hotkey listener + click engine.
 // Classic script (Chrome does not support ES-module content scripts in the manifest).
-// Depends on src/content/toolbar-rail.js, loaded before this file.
+// Depends on src/content/toolbar-rail.js and src/content/sidebar-nav.js, loaded before this file.
 (function () {
   "use strict";
 
@@ -215,6 +215,18 @@
     };
   }
 
+  function selectNavCandidate(locatorProfile) {
+    const nav = globalThis.AbKeySidebarNav;
+    const position = Number(locatorProfile.sidebarNav.position);
+    if (!nav || !Number.isInteger(position) || position < 1) {
+      return { candidate: null, railInfo: { position, source: nav ? "invalid-position" : "nav-script-missing" } };
+    }
+    const found = nav.getLink(position);
+    const railInfo = { position, source: "sidebar", total: found.total };
+    if (!found.element) return { candidate: null, railInfo };
+    return { candidate: { element: found.element, score: 1000, strategyTag: "sidebar-nav" }, railInfo };
+  }
+
   // preferredSelectors are tried strictly in order before the scored search. The first
   // element that is visible, enabled, matches textCriteria (if any) and is not covered by
   // another node wins. This lets a profile say "Save inside an open dialog first, then the
@@ -241,9 +253,12 @@
     // Toolbar rail is positional only: never fall back to a page-wide search,
     // otherwise Alt+N could click an unrelated button with a similar label.
     if (locatorProfile?.toolbarRail) return selectRailCandidate(locatorProfile);
+    if (locatorProfile?.sidebarNav) return selectNavCandidate(locatorProfile);
 
     const preferred = selectPreferredCandidate(locatorProfile);
     if (preferred) return { candidate: preferred };
+    // Strict profiles (menu items, row actions) must never fall back to a page-wide search.
+    if (locatorProfile?.preferredOnly) return { candidate: null };
 
     const scored = collectCandidates(locatorProfile).sort((a, b) => b.score - a.score);
     if (!scored.length) return { candidate: null };
@@ -286,10 +301,25 @@
     return { ok: true };
   }
 
-  function clickElement(element) {
+  // trigger "contextmenu" opens the element's right-click menu instead of clicking it
+  // (Abacum's variable row menu: Rename / Duplicate variable).
+  function clickElement(element, trigger) {
     const guard = ensureInteractable(element);
     if (!guard.ok) return guard;
-    element.click();
+    if (trigger === "contextmenu") {
+      const rect = element.getBoundingClientRect();
+      element.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: rect.left + Math.min(20, rect.width / 2),
+          clientY: rect.top + rect.height / 2
+        })
+      );
+    } else {
+      element.click();
+    }
     return { ok: true };
   }
 
@@ -333,6 +363,18 @@
   // Action execution
   // ---------------------------------------------------------------------------
 
+  async function chooseAlternative(alternatives, profile, deadline, intervalMs, retry) {
+    for (;;) {
+      for (const alternative of alternatives) {
+        const first = alternative?.steps?.[0];
+        if (!first) continue;
+        if (selectBestCandidate(first.locatorProfile || profile).candidate) return alternative;
+      }
+      if (Date.now() >= deadline) return null;
+      await waitForMutationOrDelay(intervalMs, Boolean(retry.useMutationObserver));
+    }
+  }
+
   async function executeAction(payload) {
     const started = performance.now();
     const elapsed = () => Math.round(performance.now() - started);
@@ -344,13 +386,25 @@
     debugLog(diagnosticsEnabled, "Executing action", { actionId });
     runPreActions(policy.preActions);
 
-    const steps = policy.steps?.length ? policy.steps : [{ locatorProfile: profile }];
+    let steps = policy.steps?.length ? policy.steps : [{ locatorProfile: profile }];
     const retry = policy.retryPolicy || {};
     const maxAttempts = Math.max(1, retry.attempts || 1);
     const intervalMs = Math.max(MIN_RETRY_WAIT_MS, retry.intervalMs || 200);
     const timeoutMs = Math.max(intervalMs, policy.timeoutMs || 1500);
     const deadline = Date.now() + timeoutMs;
     let lastError = null;
+
+    // alternatives: [{ steps }, …] — run the first one whose first step finds its element
+    // (e.g. Duplicate: the bulk toolbar when rows are ticked, else the focused row's menu).
+    if (policy.alternatives?.length) {
+      const chosen = await chooseAlternative(policy.alternatives, profile, deadline, intervalMs, retry);
+      if (!chosen) {
+        const error = { code: ErrorCode.ElementNotFound, message: "No alternative of this action applies on this page." };
+        debugLog(diagnosticsEnabled, "Action failed", { actionId, error, elapsedMs: elapsed() });
+        return { ok: false, error, elapsedMs: elapsed() };
+      }
+      steps = chosen.steps;
+    }
 
     for (const step of steps) {
       const stepProfile = step.locatorProfile || profile;
@@ -376,7 +430,7 @@
 
         if (candidate?.element) {
           if (diagnosticsEnabled) showDebugOutline(candidate.element);
-          const clickResult = clickElement(candidate.element);
+          const clickResult = clickElement(candidate.element, step.trigger);
           if (clickResult.ok) {
             debugLog(diagnosticsEnabled, "Click succeeded", {
               actionId,
@@ -398,7 +452,9 @@
             code: ErrorCode.ElementNotFound,
             message: stepProfile.toolbarRail
               ? `No toolbar rail button at position ${stepProfile.toolbarRail.position} on this page.`
-              : "No matching element found.",
+              : stepProfile.sidebarNav
+                ? `No navigation link at position ${stepProfile.sidebarNav.position}.`
+                : "No matching element found.",
             details: selection.railInfo || undefined
           };
           debugLog(diagnosticsEnabled, "No matching element found", { actionId, attempt, rail: selection.railInfo || null });
@@ -500,15 +556,16 @@
   window.addEventListener("keydown", onKeyDown, true);
 
   // ---------------------------------------------------------------------------
-  // Rail tooltip hotkey hints: "Info" -> "Info · Alt+1"
+  // Tooltip hotkey hints: rail "Info" -> "Info · Alt+1", left nav "Models" -> "Models · Alt+Shift+2"
   // ---------------------------------------------------------------------------
   // Abacum shows a standard MUI tooltip (.MuiTooltip-popper[role=tooltip] > .MuiTooltip-tooltip)
-  // when a rail button is hovered. It has no aria link to the button, so the tooltip is matched
+  // when a rail or left navigation button is hovered. It has no aria link to the button, so the tooltip is matched
   // by text: its text must equal the hovered button's label. While the pointer stays on the
   // button we re-check a few times per second, because the tooltip appears after a delay and
   // React may re-render its text.
 
   const RAIL_BUTTON_SELECTOR = 'button[data-testid^="toolbar-rail-button-"]';
+  const NAV_BUTTON_SELECTOR = '[data-testid^="sidebar-section-button-"]';
   const HINT_ATTR = "data-ab-key-hotkey-hint";
   const HINT_POLL_MS = 100;
   const HINT_MAX_MS = 5000;
@@ -521,23 +578,37 @@
       .join("+");
   }
 
-  function hotkeyForRailPosition(position) {
+  /** Hotkey of the first enabled action whose locator matches, e.g. "Alt+3". */
+  function hotkeyForLocator(matches) {
     const host = window.location.hostname;
     for (const hotkey of config?.hotkeys || []) {
       if (!hostAllowed(hotkey.hosts, host)) continue;
       const action = findAction(hotkey.actionId);
-      if (action?.locatorProfile?.toolbarRail?.position === position) return formatHotkey(hotkey.key);
+      if (action && matches(action.locatorProfile || {})) return formatHotkey(hotkey.key);
     }
     return null;
   }
 
   function railHintFor(button) {
     const rail = globalThis.AbKeyToolbarRail;
-    if (!rail) return null;
+    if (!rail || !button) return null;
     const position = rail.listButtons().buttons.indexOf(button) + 1;
     if (position < 1) return null; // e.g. the AI agent button, which is not numbered
-    const hotkey = hotkeyForRailPosition(position);
+    const hotkey = hotkeyForLocator((profile) => profile.toolbarRail?.position === position);
     const label = rail.labelOf(button);
+    return hotkey && label ? { label, hotkey } : null;
+  }
+
+  // Left navigation (Alt+Shift+1–9): Abacum's tooltip shows the button's aria-label ("Models").
+  function navHintFor(button) {
+    const nav = globalThis.AbKeySidebarNav;
+    if (!nav || !button) return null;
+    const items = nav.listLinks();
+    const index = items.findIndex((item) => item.button === button);
+    if (index < 0) return null; // Library, More, Help & support…: not numbered
+    const position = index + 1;
+    const hotkey = hotkeyForLocator((profile) => profile.sidebarNav?.position === position);
+    const label = items[index].label;
     return hotkey && label ? { label, hotkey } : null;
   }
 
@@ -566,9 +637,11 @@
   }
 
   function onRailPointerOver(event) {
-    const button = event.target?.closest?.(RAIL_BUTTON_SELECTOR);
-    if (!button) return;
-    const hint = railHintFor(button);
+    const railButton = event.target?.closest?.(RAIL_BUTTON_SELECTOR) || null;
+    const navButton = event.target?.closest?.(NAV_BUTTON_SELECTOR) || null;
+    if (!railButton && !navButton) return;
+    const button = railButton || navButton;
+    const hint = railHintFor(railButton) || navHintFor(navButton);
     stopRailHint();
     if (!hint) return;
     const startedAt = Date.now();

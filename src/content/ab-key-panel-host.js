@@ -57,6 +57,9 @@
     // Pass the live rail labels so the panel shows what Alt+1–5 do on this page.
     const rail = globalThis.AbKeyToolbarRail?.describe();
     if (rail) params.set("rail", JSON.stringify(rail.buttons.map((button) => button.label || "")));
+    // Same for the left navigation links behind Alt+Shift+1–9.
+    const nav = globalThis.AbKeySidebarNav?.describe();
+    if (nav) params.set("nav", JSON.stringify(nav.map((item) => item.label || "")));
     iframe.src = `${PANEL_URL}?${params.toString()}`;
     iframe.setAttribute("title", "A+B key");
 

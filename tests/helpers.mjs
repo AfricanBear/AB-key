@@ -37,6 +37,8 @@ export function createPage({ hostname = "app.abacum.io", pathname = "/app/module
       style: {},
       isConnected: true,
       click: () => clicks.push(name),
+      // Right-click menus (Alt+R / Alt+C) are opened with a contextmenu event.
+      dispatchEvent: (event) => clicks.push(`${event.type}:${name}`),
       getBoundingClientRect: () => rect,
       getAttribute: (attr) => (attr === "role" ? role : null),
       setAttribute() {},
@@ -72,8 +74,9 @@ export function createTooltip(text) {
 /**
  * Runs src/content/content-script.js against a fake page.
  * `rail` is an array of fake elements used as the right toolbar rail (top to bottom).
+ * `nav` is an array of fake elements used as the left navigation links after Library.
  */
-export async function loadContentScript(config, page, { rail = [] } = {}) {
+export async function loadContentScript(config, page, { rail = [], nav = [] } = {}) {
   const listeners = {};
   const document = {
     addEventListener: (type, fn) => {
@@ -125,6 +128,17 @@ export async function loadContentScript(config, page, { rail = [] } = {}) {
     MutationObserver: class {
       observe() {}
       disconnect() {}
+    },
+    MouseEvent: class {
+      constructor(type, init = {}) {
+        this.type = type;
+        Object.assign(this, init);
+      }
+    },
+    AbKeySidebarNav: {
+      getLink: (position) => ({ element: nav[position - 1] || null, position, total: nav.length }),
+      listLinks: () => nav.map((link) => ({ link, button: link, name: link.name, label: link.name })),
+      describe: () => nav.map((link, index) => ({ position: index + 1, label: link.name }))
     },
     AbKeyToolbarRail: {
       listButtons: () => ({ buttons: rail, source: "testid" }),

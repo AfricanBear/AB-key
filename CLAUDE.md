@@ -18,9 +18,10 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   `chrome.storage.local` and reacts to `storage.onChanged`.
   - `content-script.js` — hotkeys + click engine (`preferredSelectors` → scored search).
   - `toolbar-rail.js` — right toolbar buttons by position (`globalThis.AbKeyToolbarRail`).
+  - `sidebar-nav.js` — left navigation links after Library by position (`globalThis.AbKeySidebarNav`).
   - `ab-key-panel-host.js` — in-page A+B key panel (iframe of `src/popup/popup.html`).
   - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints.
-- `src/shared/config-schema.js` — defaults + migrations (schema v6). Changing defaults of a shipped
+- `src/shared/config-schema.js` — defaults + migrations (schema v7). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
 - `src/options/`, `src/popup/` — options page and hotkey panel (ES modules, fine there).
@@ -43,6 +44,19 @@ Abacum releases.
   `[data-testid="testid-codemirror"]` (CodeMirror 5). Hints `ul.CodeMirror-hints#cm-complete-N`
   live in `<body>` and are **re-created on every keystroke** (inline `left/top`); CodeMirror
   rewrites that style on editor scroll.
+- Left nav: `button[data-testid="sidebar-section-button-<Name>"]` inside `a[href="/app/..."]`.
+  After Library: Spaces, Models, Versions, Dimensions, Datasets, Integrations, More (More is a
+  menu wrapped in a link to the current page). Bottom: WhatsNew, HelpAndSupport (menu
+  `help-and-support-contextual-menu`, "Abacum Academy" calls `window.open`), Settings.
+- AI chat: `toolbar-rail-button-ai-agent` toggles `[data-testid="ai-chat"]`.
+- Variable row menu: right-click (a synthetic `contextmenu` works) on the name cell →
+  `[data-testid="mb-contextual-menu"] [role=menuitem]` (Rename / Duplicate / Delete variable …).
+  Focused row: `.ag-row.variable-row.ag-row-focus` (in every column container). Ticked rows show
+  `model-builder-bulk-actions-toolbar` (buttons by `aria-label`, e.g. `duplicate-variables`).
+  **Duplicate is saved immediately; Delete waits for Save.**
+- Edit Dimensions (`testid-builder-bulk-dimensions`) exists only with the right **Dimensions**
+  panel open. Its dialog closes with Esc natively (unapplied changes are lost);
+  Cancel `testid-dbv-modal-cancel`, Apply `testid-dbv-modal-accept` (disabled while unchanged).
 - Datasets: data is in the **Viewer** tab; the URL stays `/app/datasets/<id>/manager`
   (`/viewer` is a 404). AG Grid range selection: `ag-cell-range-selected*`.
 - Model pages: `/app/modules/...`. `<title>` lives in `<head>` and changes on in-app navigation.
