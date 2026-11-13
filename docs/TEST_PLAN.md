@@ -38,7 +38,6 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Held key does not repeat-trigger actions.
   - A+B key panel lists the rail labels of the current page.
   - Alt+E/S/A behave as before (no regression).
-  - Alt+C does nothing (removed in v0.6.3) and is not listed in the A+B key panel.
 - Alt+S:
   - Model builder with unsaved changes: clicks the builder Save button.
   - Dialog with a primary Save button open (e.g. dimensions modal): clicks Save in the dialog, not the builder Save behind it.
@@ -53,7 +52,20 @@ When changing the config schema, add a migration test to `tests/config-migration
 - Darker values in model cells (Options → Features):
   - On (default): model values are near-black instead of grey; pencil icons unchanged.
   - Off: Abacum's default grey; switching applies to open tabs without reload.
-- Model-only hotkeys (Alt+E, Alt+A):
+- Left navigation (Alt+Shift+1–9, any Abacum page):
+  - Alt+Shift+1 Spaces, 2 Models, 3 Versions, 4 Dimensions, 5 Datasets, 6 Integrations (order as in the sidebar after Library).
+  - Alt+Shift+7–9 do nothing while there are only six links; "More" is never opened.
+  - With a physical keyboard: Alt+Shift does not switch the Windows input language instead.
+  - A+B key panel lists "Go to Spaces" … "Go to Integrations".
+- Alt+Q: opens the AI chat; pressed again (also with the cursor in the chat input) closes it.
+- Alt+H: opens Abacum Academy in a new tab; the Help & support menu does not stay open.
+- Alt+R (models): click any cell of a variable row, Alt+R → the name field opens with the current name; Esc cancels, Save stays disabled. Without a focused variable row nothing happens.
+- Alt+C (models) — use a test model, Abacum saves the copy at once:
+  - Focused row: creates "<name> (1)". Delete it afterwards (row menu → Delete variable) and press Save.
+  - Ticked rows: uses the bulk "Duplicate (n)" button instead of the row menu.
+  - No focused or ticked row: nothing happens.
+- Esc in Edit Dimensions (Dimensions panel → edit): Abacum closes the dialog itself; unapplied changes are discarded without a prompt (Abacum behaviour, not AB-key).
+- Model-only hotkeys (Alt+E, Alt+A, Alt+R, Alt+C):
   - On `/app/modules*`: listed in the A+B key panel and working.
   - On Datasets, Dimensions, Versions: not listed in the panel; pressing them does nothing.
   - Alt+S and Alt+1–5 remain listed and working on all Abacum pages.

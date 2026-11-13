@@ -75,7 +75,7 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 Requires Node.js 22+. No dependencies to install.
 
 - `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
-- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+E / Alt+S / Alt+A, rail tooltip hints, darker model values, and the dataset selection sum.
+- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+Shift+1–9 / Alt+E / Alt+S / Alt+A / Alt+Q / Alt+H / Alt+R / Alt+C, rail tooltip hints, darker model values, and the dataset selection sum.
 - The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
 
 CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
@@ -93,6 +93,18 @@ For Opera-labeled packaging:
 - `./scripts/package.ps1 -Target opera`
 
 ## Releases
+
+### v0.10.0
+
+New hotkeys (config schema v7; a key you already use for your own action is not taken over):
+
+- **Alt+Shift+1–9: left navigation.** The N-th section link after Library — today Spaces, Models, Versions, Dimensions, Datasets, Integrations. "More" (a menu) and the bottom items are skipped. Positions are read from the page on every keypress, so new sections or links that move out of "More" get a number without an update. The A+B key panel shows them as "Go to …".
+- **Alt+Q: AI chat** on/off (the button at the bottom of the right rail). Works from inside the chat input too.
+- **Alt+H: Abacum Academy** — opens Help & support → Abacum Academy, which Abacum opens in a new tab.
+- **Alt+R: rename variable** (models). Opens the name field of the variable whose row has the focused cell — same as right-click → Rename variable. Esc cancels.
+- **Alt+C: duplicate variable** (models). Duplicates the variable of the focused row (right-click → Duplicate variable); if rows are ticked, uses the bulk "Duplicate (n)" button instead. Abacum saves the copy immediately.
+- Engine: positional `sidebarNav` locator, `preferredOnly` profiles (no page-wide text fallback), steps that open a right-click menu (`trigger: "contextmenu"`), and `executionPolicy.alternatives`.
+- Esc for Edit Dimensions is not needed any more: Abacum closes the dialog with Esc itself (note: it discards unapplied changes without asking).
 
 ### v0.8.1
 

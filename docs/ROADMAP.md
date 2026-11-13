@@ -47,7 +47,6 @@ Hints are appended outside the editor; CodeMirror resets position on each keystr
 
 ## Backlog (ideas)
 
-- **Esc closes Abacum modals** such as Edit Dimensions (`module-builder-dbv-modal`, opened by Alt+E). Today Esc does not close it. Must not discard unsaved changes silently and must not interfere with Esc inside cell editors, CodeMirror formula hints or open menus.
 - Toolbar rail: verify behaviour with a panel open and on a single version page (v0.6.0 checked only with panels closed)
 - Light theme nav and tab title still rely on hashed `css-*` classes / first `img[alt]`
 
