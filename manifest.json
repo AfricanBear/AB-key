@@ -36,6 +36,11 @@
       "matches": ["*://*.abacum.io/*"],
       "js": ["src/content/abacum-dataset-range-sum.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.abacum.io/*"],
+      "js": ["src/content/abacum-formula-hints.js"],
+      "run_at": "document_idle"
     }
   ],
   "commands": {

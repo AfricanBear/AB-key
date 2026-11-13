@@ -1,6 +1,6 @@
 # Project Status - AB-key
 
-Last updated: 2026-11-12
+Last updated: 2026-11-13
 
 ## Current Snapshot
 
@@ -109,9 +109,7 @@ Last updated: 2026-11-12
 
 Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
 
-**Planned Abacum UI features** (see roadmap for detail):
-
-- **Formula autocomplete locked to the side** — reposition `ul.CodeMirror-hints` beside Cell Editor (always on)
+Shipped in v0.9.0: **formula hints beside the Cell Editor** (`src/content/abacum-formula-hints.js`).
 
 ## Recommended Next Commit Targets
 

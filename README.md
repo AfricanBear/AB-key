@@ -75,7 +75,7 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 Requires Node.js 22+. No dependencies to install.
 
 - `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
-- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+Shift+1–9 / Alt+E / Alt+S / Alt+A / Alt+Q / Alt+H / Alt+R / Alt+C, rail tooltip hints, darker model values, and the dataset selection sum.
+- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+Shift+1–9 / Alt+E / Alt+S / Alt+A / Alt+Q / Alt+H / Alt+R / Alt+C, rail and navigation tooltip hints, darker model values, the dataset selection sum and formula hint placement.
 - The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
 
 CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
@@ -106,6 +106,10 @@ New hotkeys (config schema v7; a key you already use for your own action is not 
 - Engine: positional `sidebarNav` locator, `preferredOnly` profiles (no page-wide text fallback), steps that open a right-click menu (`trigger: "contextmenu"`), and `executionPolicy.alternatives`.
 - Esc for Edit Dimensions is not needed any more: Abacum closes the dialog with Esc itself (note: it discards unapplied changes without asking).
 
+### v0.9.0
+
+- **Formula hints beside the Cell Editor** (Models, always on). Abacum's formula autocomplete (Operators, Variables, …) used to open at the caret, often above it, covering the formula. It now opens to the right of the Cell Editor, top-aligned; to the left when the right side has no room; unchanged when neither side fits. Typing, arrow keys and clicking a hint work as before.
+  - Abacum re-creates the hint list on every keystroke, so the script watches `<body>` children (no subtree) — only while a formula editor has focus. No work at all otherwise.
 ### v0.8.1
 
 - **Lighter on resources.** Content scripts and host permissions are limited to `*.abacum.io` (were `<all_urls>`); the A+B key panel still opens on other sites when you click the icon.
