@@ -5,7 +5,8 @@
 // from the isolated script abacum-dataset-columns.js and reports user resizes back to it.
 //
 // Protocol (CustomEvent on document, detail is a JSON string so it crosses the world boundary):
-// - "ab-key:dataset-columns-apply"   isolated -> page  { pinned: [colId], widths: { colId: px } }
+// - "ab-key:dataset-columns-apply"   isolated -> page  { pinned: [colId], widths: { colId: px },
+//                                                         doubleHeader: boolean }
 // - "ab-key:dataset-columns-resized" page -> isolated  { widths: { colId: px } }
 //
 // The api is found by walking up the React fiber of the Viewer grid (.ag-root-wrapper that has
@@ -13,6 +14,8 @@
 // lockPinned on data columns, which only blocks pinning from the UI; applyColumnState still pins.
 // Pinning and resizing are local: Abacum has no onColumnPinned/onColumnResized handlers, and
 // we never move columns (Abacum's onColumnMoved may persist the order).
+// doubleHeader sets the grid's headerHeight to twice Abacum's value (a grid option, so CSS alone
+// cannot do it); the isolated script lays the header out in two rows. Off restores Abacum's value.
 (function () {
   "use strict";
 
@@ -26,8 +29,10 @@
   const MAX_HOOKS = 40;
   const RETRY_MS = 250;
   const MAX_RETRIES = 20;
+  const FALLBACK_HEADER_PX = 32;
 
   const wired = new WeakSet();
+  const originalHeaderHeight = new WeakMap(); // api -> Abacum's headerHeight
   let desired = null; // last { pinned, widths } requested by the isolated script
   let retryTimer = null;
 
@@ -86,6 +91,12 @@
     return state;
   }
 
+  /** The headerHeight to set: Abacum's own, or twice it (a missing value counts as 32 px). */
+  function headerHeightFor(original, doubleHeader) {
+    if (!doubleHeader) return original;
+    return (Number.isFinite(original) && original > 0 ? original : FALLBACK_HEADER_PX) * 2;
+  }
+
   // ---------------------------------------------------------------------------
   // Page
   // ---------------------------------------------------------------------------
@@ -127,6 +138,13 @@
     api.addEventListener("newColumnsLoaded", () => setTimeout(() => apply(0), 0));
   }
 
+  function applyHeader(api) {
+    if (typeof api.getGridOption !== "function" || typeof api.setGridOption !== "function") return;
+    if (!originalHeaderHeight.has(api)) originalHeaderHeight.set(api, api.getGridOption("headerHeight"));
+    const want = headerHeightFor(originalHeaderHeight.get(api), desired.doubleHeader);
+    if (api.getGridOption("headerHeight") !== want) api.setGridOption("headerHeight", want);
+  }
+
   function apply(attempt = 0) {
     if (retryTimer) {
       clearTimeout(retryTimer);
@@ -140,6 +158,7 @@
       return;
     }
     wire(api);
+    applyHeader(api);
     const state = buildColumnState(current, desired.pinned, desired.widths);
     if (state.length) api.applyColumnState({ state });
   }
@@ -147,12 +166,16 @@
   document.addEventListener(APPLY_EVENT, (event) => {
     try {
       const data = JSON.parse(event.detail);
-      desired = { pinned: Array.isArray(data?.pinned) ? data.pinned : [], widths: data?.widths || {} };
+      desired = {
+        pinned: Array.isArray(data?.pinned) ? data.pinned : [],
+        widths: data?.widths || {},
+        doubleHeader: data?.doubleHeader === true
+      };
     } catch {
       return;
     }
     apply(0);
   });
 
-  globalThis.AbKeyDatasetColumnsMain = Object.freeze({ findApiInFiber, buildColumnState });
+  globalThis.AbKeyDatasetColumnsMain = Object.freeze({ findApiInFiber, buildColumnState, headerHeightFor });
 })();

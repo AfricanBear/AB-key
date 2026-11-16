@@ -94,6 +94,12 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.1.1
+
+- **Two-row column headers in dataset Viewer** (Options → Features, on by default). The header is twice as tall: the type icon, the full column name and the sort arrow on top; the pin, filter and options buttons below, always visible (Abacum shows filter and options only on hover). Off: one row as before.
+  - The header height is an AG Grid option, so the page-world script sets it to twice Abacum's value and restores it when the feature is turned off.
+- **Fix: the pin no longer overlaps the options button.** It was placed at a fixed 50 px from the right edge; it is now measured from Abacum's own header buttons. In one-row mode the column name leaves room for the pin.
+
 ### v1.1.0
 
 - **Pin columns in dataset Viewer** (Options → Features, on by default). Abacum pins only the row-type/checkbox column; data columns cannot be pinned from its UI. Hover a column header in a dataset's **Viewer** tab and click the pin: the column moves next to the checkbox column and stays visible while scrolling right. You can still resize it; click the pin again to unpin.
