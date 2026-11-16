@@ -57,6 +57,7 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Off: Abacum's dark sidebar, no AB-key style left in the page.
 - Darker values in model cells (Options → Features):
   - On (default): model values are near-black instead of grey; pencil icons unchanged.
+  - Linked variables (arrow icon, e.g. "Variables From Other Models") and dimension rows after expand: values dark too, slightly lighter than editable ones (opacity 0.85 instead of Abacum's 0.4).
   - Off: Abacum's default grey; switching applies to open tabs without reload.
 - Formula hints beside the Cell Editor (Models, double-click a Logic cell):
   - Operators list on open and Variable list after typing a letter appear to the right of the editor, top-aligned; the formula text is not covered.

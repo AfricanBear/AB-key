@@ -57,6 +57,16 @@ test("enabled: injects one style for value cells, anchored on data-testid", asyn
   assert.doesNotMatch(page.style().textContent, /css-[a-z0-9]{5,}/, "no hashed Abacum classes");
 });
 
+test("read-only values (linked variables, dimension rows) are darkened too, but stay a bit lighter", async () => {
+  const css = (await load(createDefaultConfig())).style().textContent;
+  const rule = css.split("\n").find((line) => line.includes("disabled-value-cell"));
+  assert.ok(rule, "rule for disabled-value-cell");
+  assert.ok(rule.startsWith('[data-testid="value-cell"].disabled-value-cell > .cell-value {'), "scoped to read-only cells only");
+  assert.match(rule, /color: rgb\(23, 23, 23\) !important/);
+  assert.match(rule, /opacity: 0\.85 !important/, "Abacum uses 0.4");
+  assert.doesNotMatch(css, /css-[a-z0-9]{5,}/);
+});
+
 test("disabled: no style; toggling in options applies without reload", async () => {
   const page = await load({ ...createDefaultConfig(), darkerModelValuesEnabled: false });
   assert.equal(page.style(), null);

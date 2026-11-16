@@ -39,7 +39,9 @@ Abacum releases.
 - Model builder: `testid-builder-save-button`, `testid-builder-bulk-dimensions` (Alt+E),
   `testid-builder-add-button-anywhere` (only visible on row hover) and its menu
   `testid-builder-add-dropdown-anywhere` (Create variable / group / section).
-  Value cells: `[data-testid="value-cell"]`. Edit-dimensions modal: `module-builder-dbv-modal`.
+  Value cells: `[data-testid="value-cell"]`; read-only ones (linked variables with
+  `button-link-model`, dimension rows on expand) add `disabled-value-cell`, and their
+  `.cell-value` child has opacity 0.4 and its own grey. Edit-dimensions modal: `module-builder-dbv-modal`.
 - Formula Cell Editor: `.ag-popup-editor[role=dialog]` (no `aria-label`) with
   `[data-testid="testid-codemirror"]` (CodeMirror 5). Hints `ul.CodeMirror-hints#cm-complete-N`
   live in `<body>` and are **re-created on every keystroke** (inline `left/top`); CodeMirror

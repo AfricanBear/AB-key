@@ -94,6 +94,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.0.0
+
+- **Darker values also for read-only rows.** Variables linked from another model (the arrow icon) and the dimension rows shown on expand were still very pale: Abacum marks their cells `disabled-value-cell` and draws the value at opacity 0.4 in grey. With "Darker values in model cells" on, they now use the grid's text colour at opacity 0.85 — easy to read, still a touch lighter than editable values.
+
 ### v0.10.1
 
 - **Fix light theme nav** (Options → Features). An Abacum release renamed the hashed classes it relied on, so the icons stayed white on the light column. It now uses only stable hooks: `data-testid="sidebar"`, the `sidebar-section-button-*` buttons and the logo `<img>`. Icons are dark, hover is a light tint, the current section is lavender.
