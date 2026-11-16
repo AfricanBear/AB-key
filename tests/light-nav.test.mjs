@@ -8,21 +8,24 @@ import { CONFIG_KEY, sleep } from "./helpers.mjs";
 
 const SCRIPT = fs.readFileSync(new URL("../src/content/abacum-light-nav.js", import.meta.url), "utf8");
 
-// Left nav as Abacum renders it (Nov 2026): button inside <a href>, Search/More link to a page.
+// Left nav as Abacum renders it (Nov 2026): button inside <a href>. Search and More are
+// wrapped in a link to the *current* page (CURRENT), e.g. "/app/modules" on the models list.
+const CURRENT = Symbol("current page");
 const NAV = [
   ["AgentHub", "/app/agent-hub"],
-  ["Search", "/app/spaces/0d32"],
+  ["Search", CURRENT],
   ["Library", "/app/library"],
   ["Spaces", "/app/spaces"],
   ["Models", "/app/modules"],
   ["Versions", "/app/versions"],
   ["Dimensions", "/app/dimensions"],
   ["Datasets", "/app/datasets"],
-  ["More", "/app/spaces/0d32"],
+  ["More", CURRENT],
   ["Settings", null]
 ];
 
 function load({ pathname, enabled = true }) {
+  const location = { pathname };
   const observers = [];
   const listeners = {};
   const nodes = new Map();
@@ -34,10 +37,12 @@ function load({ pathname, enabled = true }) {
   };
   const buttons = NAV.map(([name, href]) => {
     const attrs = new Map();
-    const link = href ? { getAttribute: (a) => (a === "href" ? href : null) } : null;
+    const link = href ? { getAttribute: (a) => (a !== "href" ? null : href === CURRENT ? location.pathname : href) } : null;
     return {
       name,
+      testid: `sidebar-section-button-${name}`,
       attrs,
+      getAttribute: (a) => (a === "data-testid" ? `sidebar-section-button-${name}` : null),
       closest: (selector) => (selector === "a[href^='/app/']" ? link : null),
       hasAttribute: (a) => attrs.has(a),
       setAttribute: (a, v) => attrs.set(a, v),
@@ -70,7 +75,6 @@ function load({ pathname, enabled = true }) {
       this.active = false;
     }
   }
-  const location = { pathname };
   let onChanged = null;
   const ctx = {
     URL,
@@ -125,7 +129,8 @@ test("the current section is marked from the URL; Search and More never are", as
   const cases = [
     ["/app/spaces/0d32", ["Spaces"]],
     ["/app/modules/8dbb/edit", ["Models"]],
-    ["/app/modules", ["Models"]],
+    ["/app/modules", ["Models"]], // Search / More link here too (regression)
+    ["/app/spaces", ["Spaces"]],
     ["/app/datasets/8439/manager", ["Datasets"]],
     ["/app/agent-hub", ["AgentHub"]],
     ["/app/integrations", []]

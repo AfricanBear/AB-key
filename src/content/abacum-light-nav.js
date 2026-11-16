@@ -28,6 +28,9 @@
   const SIDEBAR = '[data-testid="sidebar"]';
   const NAV_BUTTON = '[data-testid^="sidebar-section-button-"]';
   const SECTION_LINK = "a[href^='/app/']";
+  const NAV_PREFIX = "sidebar-section-button-";
+  // Wrapped in a link to the current page, so their href is not a section of its own.
+  const NOT_SECTIONS = ["Search", "More"];
 
   const ICON = "#302048";
   const ACTIVE_BG = "#b8a8d8";
@@ -71,7 +74,7 @@ ${SIDEBAR} ${NAV_BUTTON}[${ACTIVE_ATTR}] {
   // Current section (exported for tests)
   // ---------------------------------------------------------------------------
 
-  /** "/app/spaces" for a section link; null for links to a page (Search, More: /app/spaces/<id>). */
+  /** "/app/spaces" for a section link; null for deeper links (/app/spaces/<id>). */
   function sectionPath(href) {
     let path;
     try {
@@ -89,7 +92,8 @@ ${SIDEBAR} ${NAV_BUTTON}[${ACTIVE_ATTR}] {
   function markActive() {
     const pathname = globalThis.location?.pathname || "";
     for (const button of document.querySelectorAll(`${SIDEBAR} ${NAV_BUTTON}`)) {
-      const link = button.closest?.(SECTION_LINK);
+      const name = (button.getAttribute("data-testid") || "").slice(NAV_PREFIX.length);
+      const link = NOT_SECTIONS.includes(name) ? null : button.closest?.(SECTION_LINK);
       const active = isCurrentSection(sectionPath(link?.getAttribute("href")), pathname);
       if (active && !button.hasAttribute(ACTIVE_ATTR)) button.setAttribute(ACTIVE_ATTR, "");
       if (!active && button.hasAttribute(ACTIVE_ATTR)) button.removeAttribute(ACTIVE_ATTR);
