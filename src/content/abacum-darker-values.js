@@ -5,7 +5,13 @@
 // value cells the grid's own text colour. Only the inherited colour changes: children with their
 // own colour (pencil icon, any coloured values) keep it.
 //
-// Anchored on Abacum's stable data-testid="value-cell", not on hashed css-* classes.
+// Read-only values (variables linked from another model, and the dimension rows shown on
+// expand) are paler still: the value-cell has the class disabled-value-cell and its
+// .cell-value child has opacity 0.4 and its own grey. Those get the same colour at opacity
+// 0.85, so they stay slightly lighter than editable values but are easy to read.
+//
+// Anchored on Abacum's stable data-testid="value-cell" and its semantic classes
+// (disabled-value-cell, cell-value), not on hashed css-* classes.
 // Classic content script; toggle: config.darkerModelValuesEnabled (Options page).
 (function () {
   "use strict";
@@ -15,7 +21,10 @@
 
   const CONFIG_KEY = "mv3ClickAutomation.config"; // keep in sync with src/shared/config-schema.js
   const STYLE_ID = "ab-key-darker-model-values";
-  const CSS = '[data-testid="value-cell"] { color: rgb(23, 23, 23) !important; }';
+  const CSS = [
+    '[data-testid="value-cell"] { color: rgb(23, 23, 23) !important; }',
+    '[data-testid="value-cell"].disabled-value-cell > .cell-value { color: rgb(23, 23, 23) !important; opacity: 0.85 !important; }'
+  ].join("\n");
 
   function setEnabled(enabled) {
     const existing = document.getElementById(STYLE_ID);

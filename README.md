@@ -94,6 +94,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.10.2
+
+- **Darker values also for read-only rows.** Variables linked from another model (the arrow icon) and the dimension rows shown on expand were still very pale: Abacum marks their cells `disabled-value-cell` and draws the value at opacity 0.4 in grey. With "Darker values in model cells" on, they now use the grid's text colour at opacity 0.85 — easy to read, still a touch lighter than editable values.
+
 ### v0.10.0
 
 New hotkeys (config schema v7; a key you already use for your own action is not taken over):
