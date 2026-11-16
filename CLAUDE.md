@@ -46,7 +46,9 @@ Abacum releases.
   rewrites that style on editor scroll.
 - Left nav: `button[data-testid="sidebar-section-button-<Name>"]` inside `a[href="/app/..."]`.
   After Library: Spaces, Models, Versions, Dimensions, Datasets, Integrations, More (More is a
-  menu wrapped in a link to the current page). Bottom: WhatsNew, HelpAndSupport (menu
+  menu wrapped in a link to the current page; so is Search). The current section has no stable
+  marker (only a hashed class + `rgba(255,255,255,.2)` background); the light nav marks it
+  itself (`data-ab-key-nav-active`). Bottom: WhatsNew, HelpAndSupport (menu
   `help-and-support-contextual-menu`, "Abacum Academy" calls `window.open`), Settings.
 - AI chat: `toolbar-rail-button-ai-agent` toggles `[data-testid="ai-chat"]`.
 - Variable row menu: right-click (a synthetic `contextmenu` works) on the name cell →
