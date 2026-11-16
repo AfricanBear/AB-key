@@ -75,6 +75,7 @@ Last updated: 2026-11-13
 ### Light theme nav (v0.4.0)
 
 - `src/content/abacum-light-nav.js` on `*.abacum.io`; options toggle and preview images.
+- v0.10.1: stable selectors only (`data-testid="sidebar"`, `sidebar-section-button-*`); current section marked from the URL.
 
 ### Index toolbar hotkeys (v0.5.0)
 

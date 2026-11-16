@@ -49,6 +49,12 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Click a single cell: tooltip disappears.
   - Selection reaching the last rendered row while the grid can scroll: "Visible rows only".
   - Models: no AB-key tooltip (Abacum's own one is unchanged). Toggle off in Options: no tooltip.
+- Light theme nav (Options → Features → Light theme nav):
+  - Left icon column is light, icons dark; the logo sits on white; hovering an icon shows a light tint.
+  - Current section in lavender: Spaces on a space, Models on the models list and on a model, Datasets on a dataset, Home on Agent hub. Search and More are never highlighted.
+  - Clicking another section and the browser Back button move the highlight.
+  - The right drawer (AI chat, Info / Dimensions panels) keeps Abacum's own look.
+  - Off: Abacum's dark sidebar, no AB-key style left in the page.
 - Darker values in model cells (Options → Features):
   - On (default): model values are near-black instead of grey; pencil icons unchanged.
   - Linked variables (arrow icon, e.g. "Variables From Other Models") and dimension rows after expand: values dark too, slightly lighter than editable ones (opacity 0.85 instead of Abacum's 0.4).
