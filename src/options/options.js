@@ -8,6 +8,7 @@ const lightThemeNavToggle = document.getElementById("lightThemeNavEnabled");
 const darkerModelValuesToggle = document.getElementById("darkerModelValuesEnabled");
 const datasetSelectionSumToggle = document.getElementById("datasetSelectionSumEnabled");
 const datasetPinColumnsToggle = document.getElementById("datasetPinColumnsEnabled");
+const datasetTwoRowHeaderToggle = document.getElementById("datasetTwoRowHeaderEnabled");
 const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
 
@@ -45,6 +46,7 @@ async function loadConfig() {
   darkerModelValuesToggle.checked = config.darkerModelValuesEnabled !== false;
   datasetSelectionSumToggle.checked = config.datasetSelectionSumEnabled !== false;
   datasetPinColumnsToggle.checked = config.datasetPinColumnsEnabled !== false;
+  datasetTwoRowHeaderToggle.checked = config.datasetTwoRowHeaderEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
   setStatus("Configuration loaded.");
 }
@@ -58,6 +60,7 @@ async function saveConfig() {
     parsed.darkerModelValuesEnabled = darkerModelValuesToggle.checked;
     parsed.datasetSelectionSumEnabled = datasetSelectionSumToggle.checked;
     parsed.datasetPinColumnsEnabled = datasetPinColumnsToggle.checked;
+    parsed.datasetTwoRowHeaderEnabled = datasetTwoRowHeaderToggle.checked;
     const migrated = migrateConfig(parsed);
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });

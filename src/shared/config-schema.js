@@ -224,6 +224,7 @@ export const DEFAULT_CONFIG = {
   darkerModelValuesEnabled: true,
   datasetSelectionSumEnabled: true,
   datasetPinColumnsEnabled: true,
+  datasetTwoRowHeaderEnabled: true,
   commandBindings: {
     run_primary_action: "action.primary"
   },
@@ -466,6 +467,7 @@ export function migrateConfig(rawConfig) {
   if (typeof next.darkerModelValuesEnabled !== "boolean") next.darkerModelValuesEnabled = DEFAULT_CONFIG.darkerModelValuesEnabled;
   if (typeof next.datasetSelectionSumEnabled !== "boolean") next.datasetSelectionSumEnabled = DEFAULT_CONFIG.datasetSelectionSumEnabled;
   if (typeof next.datasetPinColumnsEnabled !== "boolean") next.datasetPinColumnsEnabled = DEFAULT_CONFIG.datasetPinColumnsEnabled;
+  if (typeof next.datasetTwoRowHeaderEnabled !== "boolean") next.datasetTwoRowHeaderEnabled = DEFAULT_CONFIG.datasetTwoRowHeaderEnabled;
   if (typeof next.diagnosticsEnabled !== "boolean") next.diagnosticsEnabled = DEFAULT_CONFIG.diagnosticsEnabled;
   validateConfigShape(next);
   return next;

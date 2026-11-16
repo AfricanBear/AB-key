@@ -1,4 +1,4 @@
-// Pinned columns and column widths for Abacum dataset Viewer.
+// Pinned columns, column widths and two-row headers for Abacum dataset Viewer.
 //
 // Abacum's dataset Viewer is an AG Grid where only the service column (row type + checkbox) is
 // pinned left; data columns have lockPinned, so they cannot be pinned from the UI, and widths
@@ -13,8 +13,14 @@
 // - Dataset id: /app/datasets/<id>/... (the Viewer tab does not change the URL).
 // - Pinned columns keep the grid's order (we never move columns).
 // - Pinning is refused when pinned columns would take more than MAX_PINNED_SHARE of the grid.
+// - The pin sits just left of Abacum's header buttons (filter, options), measured on every pass.
 //
-// Classic content script; toggle: config.datasetPinColumnsEnabled (Options page).
+// Two-row headers: the header is twice as tall (the bridge sets AG Grid's headerHeight); row 1 is
+// the type icon, name and sort arrow, row 2 the pin, filter and options buttons, always visible.
+// Scoped by attributes on the Viewer grid: data-ab-key-pins, data-ab-key-two-row.
+//
+// Classic content script; toggles: config.datasetPinColumnsEnabled and
+// config.datasetTwoRowHeaderEnabled (Options page).
 (function () {
   "use strict";
 
@@ -30,7 +36,10 @@
   const STYLE_ID = "ab-key-pin-style";
   const TOAST_ID = "ab-key-pin-toast";
   const MAX_PINNED_SHARE = 0.6;
-  const MENU_BUTTON_PX = 22;
+  const PINS_ATTR = "data-ab-key-pins";
+  const TWO_ROW_ATTR = "data-ab-key-two-row";
+  const HEADER = '[data-testid="custom-column-header"]';
+  const PIN_GAP_PX = 2;
   const THROTTLE_MS = 150;
   const TOAST_MS = 2500;
   // Material "push_pin" (Apache 2.0).
@@ -50,9 +59,21 @@
 .${BUTTON_CLASS}[aria-pressed="true"] { color: #5b3fd9; }
 .${BUTTON_CLASS} svg { width: 14px; height: 14px; fill: currentColor; pointer-events: none; }
 .${BUTTON_CLASS}[aria-pressed="false"] svg { transform: rotate(45deg); }
+/* one row: keep the name clear of the pin */
+.ag-root-wrapper[${PINS_ATTR}]:not([${TWO_ROW_ATTR}]) ${HEADER} > .ag-header-cell-label { margin-right: 22px; }
+/* two rows: name on top, buttons below and always visible */
+.ag-root-wrapper[${TWO_ROW_ATTR}] ${HEADER} {
+  display: grid !important; grid-template-columns: 1fr auto auto; grid-template-rows: 1fr 1fr; align-items: center;
+}
+.ag-root-wrapper[${TWO_ROW_ATTR}] ${HEADER} > .ag-header-cell-label { grid-row: 1; grid-column: 1 / -1; min-width: 0; margin-right: 0; }
+.ag-root-wrapper[${TWO_ROW_ATTR}] ${HEADER} > .ag-header-cell-menu-button { grid-row: 2; opacity: 1 !important; }
+.ag-root-wrapper[${TWO_ROW_ATTR}] ${HEADER} > .ag-header-cell-menu-button:nth-child(1) { grid-column: 3; }
+.ag-root-wrapper[${TWO_ROW_ATTR}] ${HEADER} > .ag-header-cell-menu-button:nth-child(2) { grid-column: 2; }
+.ag-root-wrapper[${TWO_ROW_ATTR}] .${BUTTON_CLASS} { top: 75%; opacity: 1; }
 `;
 
-  let enabled = false; // until the config is read
+  let pinsEnabled = false; // until the config is read
+  let twoRowEnabled = false;
   let store = {}; // { [datasetId]: { pinned: [colId], widths: { colId: px } } }
   let lastRoot = null;
   let timer = null;
@@ -101,6 +122,12 @@
     return next;
   }
 
+  /** Distance from the cell's right edge to the left of Abacum's header buttons, plus a gap. */
+  function pinRightOffset(cellRight, buttonLefts) {
+    const lefts = (buttonLefts || []).filter(Number.isFinite);
+    return lefts.length ? Math.max(0, Math.round(cellRight - Math.min(...lefts))) + PIN_GAP_PX : 4;
+  }
+
   /** Whether one more column of `columnWidth` fits next to `pinnedWidth` in a grid of `gridWidth`. */
   function canPin(pinnedWidth, columnWidth, gridWidth) {
     if (!(gridWidth > 0)) return true;
@@ -129,10 +156,29 @@
     (document.head || document.documentElement).appendChild(style);
   }
 
+  const active = () => pinsEnabled || twoRowEnabled;
+
+  function removeButtons() {
+    for (const button of document.querySelectorAll(`.${BUTTON_CLASS}`)) button.remove();
+  }
+
   function removeUi() {
     document.getElementById(STYLE_ID)?.remove();
     document.getElementById(TOAST_ID)?.remove();
-    for (const button of document.querySelectorAll(`.${BUTTON_CLASS}`)) button.remove();
+    removeButtons();
+    for (const root of document.querySelectorAll(".ag-root-wrapper")) {
+      root.removeAttribute(PINS_ATTR);
+      root.removeAttribute(TWO_ROW_ATTR);
+    }
+  }
+
+  function markRoot(root) {
+    const set = (name, on) => {
+      if (on && !root.hasAttribute(name)) root.setAttribute(name, "");
+      if (!on && root.hasAttribute(name)) root.removeAttribute(name);
+    };
+    set(PINS_ATTR, pinsEnabled);
+    set(TWO_ROW_ATTR, twoRowEnabled);
   }
 
   function showToast(text) {
@@ -164,8 +210,9 @@
   function sendApply() {
     const datasetId = currentDatasetId();
     if (!datasetId) return;
-    const { pinned, widths } = enabled ? entryOf(store, datasetId) : { pinned: [], widths: {} };
-    document.dispatchEvent(new CustomEvent(APPLY_EVENT, { detail: JSON.stringify({ pinned, widths }) }));
+    const { pinned, widths } = pinsEnabled ? entryOf(store, datasetId) : { pinned: [], widths: {} };
+    const detail = JSON.stringify({ pinned, widths, doubleHeader: twoRowEnabled });
+    document.dispatchEvent(new CustomEvent(APPLY_EVENT, { detail }));
   }
 
   function save(next) {
@@ -220,8 +267,11 @@
         button = createButton();
         cell.appendChild(button);
       }
-      const menuButtons = cell.querySelectorAll(".ag-header-cell-menu-button").length;
-      button.style.right = `${menuButtons * MENU_BUTTON_PX + 6}px`;
+      const lefts = Array.from(cell.querySelectorAll(".ag-header-cell-menu-button"), (menu) => menu.getBoundingClientRect())
+        .filter((rect) => rect.width > 0)
+        .map((rect) => rect.left);
+      const right = `${pinRightOffset(cell.getBoundingClientRect().right, lefts)}px`;
+      if (button.style.right !== right) button.style.right = right;
       const isPinned = pinned.includes(colId);
       const label = isPinned ? "Unpin column" : "Pin column left";
       if (button.getAttribute("aria-pressed") !== String(isPinned)) button.setAttribute("aria-pressed", String(isPinned));
@@ -233,17 +283,19 @@
   }
 
   function update() {
-    const root = enabled ? viewerRoot() : null;
+    const root = active() ? viewerRoot() : null;
     if (!root) {
       lastRoot = null;
       return;
     }
     ensureStyle();
+    markRoot(root);
     if (root !== lastRoot) {
       lastRoot = root;
       sendApply(); // new grid (page load, Loads -> Viewer, another dataset): restore state
     }
-    decorate(root, currentDatasetId());
+    if (pinsEnabled) decorate(root, currentDatasetId());
+    else removeButtons();
   }
 
   // Throttled, not debounced: Abacum mutates the DOM continuously while the grid scrolls.
@@ -255,23 +307,28 @@
     }, THROTTLE_MS);
   }
 
-  function setEnabled(value) {
-    const was = enabled;
-    enabled = value;
-    if (enabled) {
+  function applyConfig(config) {
+    const nextPins = config?.datasetPinColumnsEnabled !== false;
+    const nextTwoRow = config?.datasetTwoRowHeaderEnabled !== false;
+    const wasActive = active();
+    if (nextPins === pinsEnabled && nextTwoRow === twoRowEnabled && (observer || !wasActive)) return;
+    pinsEnabled = nextPins;
+    twoRowEnabled = nextTwoRow;
+    if (active()) {
       if (!observer) {
         observer = new MutationObserver(() => {
           if (currentDatasetId()) schedule();
         });
         observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
       }
-      schedule();
+      if (wasActive) sendApply(); // same grid, new settings
+      update();
     } else {
       observer?.disconnect();
       observer = null;
       lastRoot = null;
-      if (was) {
-        sendApply(); // unpin what we pinned; widths stay until the grid is re-created
+      if (wasActive) {
+        sendApply(); // unpin and restore Abacum's header height; widths stay until the grid is re-created
         removeUi();
       }
     }
@@ -283,7 +340,7 @@
 
   document.addEventListener(RESIZED_EVENT, (event) => {
     const datasetId = currentDatasetId();
-    if (!enabled || !datasetId) return;
+    if (!pinsEnabled || !datasetId) return;
     try {
       const data = JSON.parse(event.detail);
       save(mergeWidths(store, datasetId, data?.widths));
@@ -292,13 +349,11 @@
     }
   });
 
-  const isEnabled = (config) => config?.datasetPinColumnsEnabled !== false;
-
   chrome.storage.local
     .get([CONFIG_KEY, STORE_KEY])
     .then((data) => {
       store = data?.[STORE_KEY] || {};
-      setEnabled(isEnabled(data?.[CONFIG_KEY]));
+      applyConfig(data?.[CONFIG_KEY]);
     })
     .catch(() => {});
 
@@ -309,13 +364,13 @@
       const datasetId = currentDatasetId();
       const changedHere = datasetId && JSON.stringify(entryOf(next, datasetId)) !== JSON.stringify(entryOf(store, datasetId));
       store = next;
-      if (changedHere && enabled) {
+      if (changedHere && pinsEnabled) {
         sendApply(); // e.g. reset from Options or another tab
         schedule();
       }
     }
-    if (changes[CONFIG_KEY]) setEnabled(isEnabled(changes[CONFIG_KEY].newValue));
+    if (changes[CONFIG_KEY]) applyConfig(changes[CONFIG_KEY].newValue);
   });
 
-  globalThis.AbKeyDatasetColumns = Object.freeze({ datasetIdFromPath, togglePinned, mergeWidths, canPin, entryOf, update });
+  globalThis.AbKeyDatasetColumns = Object.freeze({ datasetIdFromPath, togglePinned, mergeWidths, canPin, pinRightOffset, entryOf, update });
 })();

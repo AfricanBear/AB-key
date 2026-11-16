@@ -58,6 +58,11 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Pin wide columns until they would take > 60% of the grid: a "Not enough room" note, nothing pinned.
   - Click the pin again: unpinned. Options → Reset pinned columns and widths: pins removed on open tabs; widths return to defaults on the next Viewer open.
   - Toggle off in Options: pins removed from open tabs, no buttons. No requests to Abacum's API when pinning or resizing (Network tab).
+- Two-row column headers in dataset Viewer (Options → Features, on by default):
+  - Header is twice as tall; row 1: type icon, full name, sort arrow; row 2: pin, filter, options — visible without hover, no overlap.
+  - Filter and options buttons still open their menus; clicking the name still sorts; drag and resize still work.
+  - Loads → Viewer and reload: still two rows. The Loads tab and models keep one-row headers.
+  - Off: one-row header again on open tabs; the pin (on hover) sits left of the filter button without covering it or the name.
 - Light theme nav (Options → Features → Light theme nav):
   - Left icon column is light, icons dark; the logo sits on white; hovering an icon shows a light tint.
   - Current section in lavender: Spaces on a space, Models on the models list and on a model, Datasets on a dataset, Home on Agent hub. Search and More are never highlighted.

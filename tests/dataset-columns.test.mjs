@@ -25,16 +25,25 @@ class FakeCustomEvent {
 
 // --- fake Viewer grid ---------------------------------------------------------------------
 
+const menuButtons = (cellRight) => [
+  { getBoundingClientRect: () => ({ left: cellRight - 31, width: 22 }) },
+  { getBoundingClientRect: () => ({ left: cellRight - 55, width: 22 }) }
+];
+
 function createGrid({ columns = ["_abacum_type", "date", "employee", "salary", "_abacum_status"], width = 1000, pinnedWidth = 64, columnWidth = 200 } = {}) {
-  const root = { cells: [], pinnedWidth, width };
+  const root = { cells: [], pinnedWidth, width, attrs: {} };
+  root.hasAttribute = (name) => name in root.attrs;
+  root.setAttribute = (name, value) => (root.attrs[name] = String(value));
+  root.removeAttribute = (name) => delete root.attrs[name];
   root.cells = columns.map((colId) => {
     const cell = {
       colId,
       children: [],
       getAttribute: (name) => (name === "col-id" ? colId : null),
-      getBoundingClientRect: () => ({ width: columnWidth }),
+      getBoundingClientRect: () => ({ width: columnWidth, right: columnWidth }),
       querySelector: (selector) => (selector.includes("ab-key-pin-button") ? cell.children.find((child) => child.isConnected) || null : null),
-      querySelectorAll: (selector) => (selector === ".ag-header-cell-menu-button" ? [{}, {}] : []),
+      // Abacum's options (rightmost) and filter buttons; opacity 0 until hover, but laid out.
+      querySelectorAll: (selector) => (selector === ".ag-header-cell-menu-button" ? menuButtons(columnWidth) : []),
       appendChild(child) {
         child.parent = cell;
         child.isConnected = true;
@@ -210,9 +219,10 @@ test("adds a pin button to data columns only and restores the dataset's state", 
   assert.equal(page.grid.button("date").attrs["aria-pressed"], "false");
   assert.equal(page.grid.button("employee").attrs["aria-pressed"], "true");
   assert.equal(page.grid.button("employee").attrs.title, "Unpin column");
-  assert.equal(page.grid.button("date").style.right, "50px", "left of the two menu buttons");
+  assert.equal(page.grid.button("date").style.right, "57px", "just left of the filter button (55px from the edge)");
+  assert.ok("data-ab-key-pins" in page.grid.attrs && "data-ab-key-two-row" in page.grid.attrs, "grid marked for the CSS");
   assert.ok(page.nodes.get("ab-key-pin-style"), "styles injected");
-  assert.deepEqual(page.applies(), [{ pinned: ["employee"], widths: { salary: 150 } }]);
+  assert.deepEqual(page.applies(), [{ pinned: ["employee"], widths: { salary: 150 }, doubleHeader: true }]);
 });
 
 test("clicking the pin pins and unpins the column, saves it and asks the page to apply", async () => {
@@ -220,12 +230,12 @@ test("clicking the pin pins and unpins the column, saves it and asks the page to
   const click = page.grid.button("date").fire("click");
   assert.ok(click.stopped, "the header does not sort");
   assert.deepEqual(page.storage[STORE_KEY][DATASET].pinned, ["date"]);
-  assert.deepEqual(page.applies().at(-1), { pinned: ["date"], widths: {} });
+  assert.deepEqual(page.applies().at(-1), { pinned: ["date"], widths: {}, doubleHeader: true });
   assert.equal(page.grid.button("date").attrs["aria-pressed"], "true");
 
   page.grid.button("date").fire("click");
   assert.equal(page.storage[STORE_KEY][DATASET], undefined);
-  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {} });
+  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {}, doubleHeader: true });
   assert.equal(page.grid.button("date").attrs["aria-pressed"], "false");
 });
 
@@ -266,7 +276,7 @@ test("state is re-applied when the grid is re-created, not on every mutation", a
 test("reset from Options unpins on open tabs", async () => {
   const page = await load({ stored: { [DATASET]: { pinned: ["date"], widths: {} } } });
   await page.setStore(undefined);
-  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {} });
+  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {}, doubleHeader: true });
   assert.equal(page.grid.button("date").attrs["aria-pressed"], "false");
 });
 
@@ -286,25 +296,65 @@ test("toggle: default on, user choice kept; off unpins, removes buttons and the 
 
   const page = await load({ stored: { [DATASET]: { pinned: ["date"], widths: {} } } });
   await page.setConfig({ ...createDefaultConfig(), datasetPinColumnsEnabled: false });
-  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {} });
+  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {}, doubleHeader: true }, "two-row header stays");
   assert.equal(page.grid.button("date"), null);
-  assert.equal(page.observers.filter((observer) => observer.active).length, 0);
-  assert.deepEqual(page.storage[STORE_KEY][DATASET].pinned, ["date"], "stored state is kept");
+  assert.ok(!("data-ab-key-pins" in page.grid.attrs));
+  assert.deepEqual([...page.storage[STORE_KEY][DATASET].pinned], ["date"], "stored state is kept");
 
-  const off = await load({ config: { ...createDefaultConfig(), datasetPinColumnsEnabled: false } });
+  await page.setConfig({ ...createDefaultConfig(), datasetPinColumnsEnabled: false, datasetTwoRowHeaderEnabled: false });
+  assert.deepEqual(page.applies().at(-1), { pinned: [], widths: {}, doubleHeader: false });
+  assert.deepEqual(Object.keys(page.grid.attrs), []);
+  assert.equal(page.observers.filter((observer) => observer.active).length, 0);
+
+  const off = await load({ config: { ...createDefaultConfig(), datasetPinColumnsEnabled: false, datasetTwoRowHeaderEnabled: false } });
   assert.equal(off.observers.length, 0);
   assert.equal(off.grid.button("date"), null);
   assert.equal(off.applies().length, 0);
 });
 
+test("pin offset follows Abacum's buttons, with a fallback when there are none", async () => {
+  const { api } = await load({ grid: null });
+  assert.equal(api.pinRightOffset(200, [169, 145]), 57);
+  assert.equal(api.pinRightOffset(300, [269]), 33);
+  assert.equal(api.pinRightOffset(200, []), 4);
+});
+
+test("two-row header: default on, toggled alone; off restores one row and keeps pins", async () => {
+  assert.equal(createDefaultConfig().datasetTwoRowHeaderEnabled, true);
+  assert.equal(migrateConfig(loadV1Config()).datasetTwoRowHeaderEnabled, true);
+  assert.equal(migrateConfig({ ...createDefaultConfig(), datasetTwoRowHeaderEnabled: false }).datasetTwoRowHeaderEnabled, false);
+
+  const page = await load({ stored: { [DATASET]: { pinned: ["date"], widths: {} } } });
+  assert.ok("data-ab-key-two-row" in page.grid.attrs);
+  await page.setConfig({ ...createDefaultConfig(), datasetTwoRowHeaderEnabled: false });
+  assert.deepEqual(page.applies().at(-1), { pinned: ["date"], widths: {}, doubleHeader: false });
+  assert.ok(!("data-ab-key-two-row" in page.grid.attrs));
+  assert.ok("data-ab-key-pins" in page.grid.attrs);
+  assert.equal(page.grid.button("date").attrs["aria-pressed"], "true");
+
+  const onlyRows = await load({ config: { ...createDefaultConfig(), datasetPinColumnsEnabled: false } });
+  assert.equal(onlyRows.grid.button("date"), null);
+  assert.deepEqual(onlyRows.applies(), [{ pinned: [], widths: {}, doubleHeader: true }]);
+});
+
+test("two-row CSS is scoped to the marked Viewer grid", () => {
+  assert.match(SCRIPT, /\.ag-root-wrapper\[\$\{TWO_ROW_ATTR\}\] \$\{HEADER\} \{/);
+  assert.match(SCRIPT, /grid-template-rows: 1fr 1fr/);
+  assert.match(SCRIPT, /menu-button \{ grid-row: 2; opacity: 1 !important; \}/);
+});
+
 // --- page-world bridge --------------------------------------------------------------------
 
-function createGridApi(columns) {
+function createGridApi(columns, { headerHeight = 32 } = {}) {
   const listeners = {};
   const applied = [];
+  const options = { headerHeight };
   return {
     applied,
     listeners,
+    options,
+    getGridOption: (key) => options[key],
+    setGridOption: (key, value) => (options[key] = value),
     getColumnState: () => columns.map((column) => ({ ...column })),
     applyColumnState: ({ state }) => {
       applied.push(state);
@@ -409,6 +459,20 @@ test("bridge: applies requests, reports user resizes and restores after new colu
   gridApi.listeners.newColumnsLoaded();
   await sleep(10);
   assert.deepEqual(JSON.parse(JSON.stringify(gridApi.applied)), [[{ colId: "date", pinned: "left" }]]);
+});
+
+test("bridge: doubles Abacum's header height on request and restores it", () => {
+  const gridApi = createGridApi(COLUMNS());
+  const page = loadMain({ gridApi });
+  assert.equal(page.main.headerHeightFor(32, true), 64);
+  assert.equal(page.main.headerHeightFor(undefined, true), 64);
+  assert.equal(page.main.headerHeightFor(40, false), 40);
+  page.request({ pinned: [], widths: {}, doubleHeader: true });
+  assert.equal(gridApi.options.headerHeight, 64);
+  page.request({ pinned: [], widths: {}, doubleHeader: true });
+  assert.equal(gridApi.options.headerHeight, 64, "not doubled twice");
+  page.request({ pinned: [], widths: {}, doubleHeader: false });
+  assert.equal(gridApi.options.headerHeight, 32);
 });
 
 test("manifest: the bridge runs in the MAIN world on Abacum only and uses no chrome.* APIs", () => {

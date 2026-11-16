@@ -71,6 +71,9 @@ Abacum releases.
   The grid api is reachable only in the page world via the React fiber of `.ag-root-wrapper`
   (hook state ~4 levels up); `applyColumnState` pins despite `lockPinned`. Abacum handles
   `onColumnMoved` (may persist order) but not pinned/resized. Loads → Viewer re-creates the grid.
+  Header: `headerHeight` grid option 32 (set by Abacum, so only `setGridOption` changes it);
+  `[data-testid="custom-column-header"]` is a `row-reverse` flex of two `.ag-header-cell-menu-button`
+  (options, filter; opacity 0 until `.ag-header-active`) and `.ag-header-cell-label`.
 - Model pages: `/app/modules/...`. `<title>` lives in `<head>` and changes on in-app navigation.
 
 ## Working agreements
