@@ -262,6 +262,14 @@ textarea::placeholder {
   line-height: 1.4;
 }
 
+label.toggle-text {
+  cursor: pointer;
+}
+
+.toggle-actions {
+  margin-top: 6px;
+}
+
 .hint {
   margin: 0 0 12px;
   font-size: 12px;

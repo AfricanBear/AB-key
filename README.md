@@ -94,6 +94,14 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.1.0
+
+- **Pin columns in dataset Viewer** (Options → Features, on by default). Abacum pins only the row-type/checkbox column; data columns cannot be pinned from its UI. Hover a column header in a dataset's **Viewer** tab and click the pin: the column moves next to the checkbox column and stays visible while scrolling right. You can still resize it; click the pin again to unpin.
+  - Remembered per dataset in this browser (`chrome.storage.local`), together with the width of every column you resize by mouse. Both are restored when the Viewer opens again (page load, Loads → Viewer, F5). Nothing is sent to Abacum, and other users see Abacum's default layout.
+  - Pinned columns keep the grid's order (AB-key never moves columns: Abacum may save the column order). Pinning is refused with a short note when pinned columns would take more than 60% of the grid.
+  - Options → Features → **Reset pinned columns and widths** forgets them for all datasets.
+  - Technical: a small page-world script (`"world": "MAIN"`, Chrome 111+ / Opera 97+) reaches the AG Grid api through React and calls `applyColumnState`; it has no `chrome.*` access and talks to the content script with DOM events.
+
 ### v1.0.0
 
 - **Darker values also for read-only rows.** Variables linked from another model (the arrow icon) and the dimension rows shown on expand were still very pale: Abacum marks their cells `disabled-value-cell` and draws the value at opacity 0.4 in grey. With "Darker values in model cells" on, they now use the grid's text colour at opacity 0.85 — easy to read, still a touch lighter than editable values.

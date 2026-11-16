@@ -49,6 +49,15 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Click a single cell: tooltip disappears.
   - Selection reaching the last rendered row while the grid can scroll: "Visible rows only".
   - Models: no AB-key tooltip (Abacum's own one is unchanged). Toggle off in Options: no tooltip.
+- Pin columns in dataset Viewer (dataset → **Viewer** tab):
+  - Hover a data column header: a grey pin appears left of the filter button; the service columns (checkbox, status) have none.
+  - Click the pin: the column moves next to the checkbox column, the pin turns purple and stays visible; the header does not sort and does not start a drag.
+  - Scroll right: pinned columns stay visible. Drag the edge of a pinned column: it resizes.
+  - Resize any column, switch Loads → Viewer and reload the page: pinned columns and widths are restored.
+  - Another dataset: its own pins (none at first). The Loads tab grid has no pins.
+  - Pin wide columns until they would take > 60% of the grid: a "Not enough room" note, nothing pinned.
+  - Click the pin again: unpinned. Options → Reset pinned columns and widths: pins removed on open tabs; widths return to defaults on the next Viewer open.
+  - Toggle off in Options: pins removed from open tabs, no buttons. No requests to Abacum's API when pinning or resizing (Network tab).
 - Light theme nav (Options → Features → Light theme nav):
   - Left icon column is light, icons dark; the logo sits on white; hovering an icon shows a light tint.
   - Current section in lavender: Spaces on a space, Models on the models list and on a model, Datasets on a dataset, Home on Agent hub. Search and More are never highlighted.

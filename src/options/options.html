@@ -64,6 +64,17 @@
             </span>
           </label>
 
+          <div class="toggle-row">
+            <input type="checkbox" id="datasetPinColumnsEnabled" />
+            <span class="toggle-body">
+              <label class="toggle-text" id="datasetPinColumnsLabel" for="datasetPinColumnsEnabled">Pin columns in dataset Viewer</label>
+              <span class="toggle-hint">Hover a column header in a dataset Viewer and click the pin to keep the column on the left while scrolling. Pinned columns and column widths are remembered per dataset in this browser only.</span>
+              <span class="toggle-actions">
+                <button type="button" id="resetDatasetColumnsBtn" class="btn btn-toolbar">Reset pinned columns and widths</button>
+              </span>
+            </span>
+          </div>
+
           <label class="toggle-row">
             <input type="checkbox" id="diagnosticsEnabled" />
             <span class="toggle-body">

@@ -7,6 +7,8 @@ const abacumTabTitleToggle = document.getElementById("abacumTabTitleEnabled");
 const lightThemeNavToggle = document.getElementById("lightThemeNavEnabled");
 const darkerModelValuesToggle = document.getElementById("darkerModelValuesEnabled");
 const datasetSelectionSumToggle = document.getElementById("datasetSelectionSumEnabled");
+const datasetPinColumnsToggle = document.getElementById("datasetPinColumnsEnabled");
+const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
 
 if (brandLogo) {
@@ -42,6 +44,7 @@ async function loadConfig() {
   lightThemeNavToggle.checked = Boolean(config.lightThemeNavEnabled);
   darkerModelValuesToggle.checked = config.darkerModelValuesEnabled !== false;
   datasetSelectionSumToggle.checked = config.datasetSelectionSumEnabled !== false;
+  datasetPinColumnsToggle.checked = config.datasetPinColumnsEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
   setStatus("Configuration loaded.");
 }
@@ -54,6 +57,7 @@ async function saveConfig() {
     parsed.lightThemeNavEnabled = lightThemeNavToggle.checked;
     parsed.darkerModelValuesEnabled = darkerModelValuesToggle.checked;
     parsed.datasetSelectionSumEnabled = datasetSelectionSumToggle.checked;
+    parsed.datasetPinColumnsEnabled = datasetPinColumnsToggle.checked;
     const migrated = migrateConfig(parsed);
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });
@@ -87,6 +91,21 @@ function importConfig() {
   input.click();
 }
 
+async function resetDatasetColumns() {
+  const data = await chrome.storage.local.get(DATASET_COLUMNS_KEY);
+  const count = Object.keys(data[DATASET_COLUMNS_KEY] || {}).length;
+  if (!count) {
+    setStatus("No pinned columns or widths are stored.");
+    return;
+  }
+  if (!confirm(`Forget pinned columns and widths for ${count} dataset${count === 1 ? "" : "s"}?`)) return;
+  await chrome.storage.local.remove(DATASET_COLUMNS_KEY);
+  setStatus("Pinned columns and widths were reset. Widths return to defaults when the Viewer is reopened.");
+}
+
+document.getElementById("resetDatasetColumnsBtn").addEventListener("click", () =>
+  resetDatasetColumns().catch((error) => setStatus(`Reset failed: ${error.message}`, true))
+);
 document.getElementById("reloadBtn").addEventListener("click", loadConfig);
 document.getElementById("saveBtn").addEventListener("click", saveConfig);
 document.getElementById("exportBtn").addEventListener("click", exportConfig);
