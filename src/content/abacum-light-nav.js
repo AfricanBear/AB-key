@@ -1,155 +1,174 @@
+// Light theme for Abacum's left navigation (Options → Features, off by default).
+//
+// Abacum's sidebar is dark purple with white icons. This script makes the 48px icon column
+// light, the icons dark, and highlights the current section in lavender.
+//
+// Only stable anchors are used (verified Nov 2026) — hashed css-xxxx classes changed in an
+// Abacum release and broke the previous version:
+// - [data-testid="sidebar"]: the left MUI Drawer (the right drawer is not touched);
+// - [data-testid^="sidebar-section-button-"]: nav buttons; icons use currentColor;
+// - the logo is the only <img> box in the sidebar.
+// Abacum marks the current section only with a hashed class, so the script marks it itself
+// (data-ab-key-nav-active) by comparing the URL with each section link (/app/<section>).
+//
+// Work happens only while the feature is on: <head> is watched (React may drop our <style>,
+// and the <title> changes on every in-app navigation), plus popstate.
+//
+// Classic content script.
 (function () {
   "use strict";
+
+  if (globalThis.AbKeyLightNav) return;
 
   const CONFIG_KEY = "mv3ClickAutomation.config";
   const STYLE_ID = "ab-key-light-nav-styles";
   const ROOT_ATTR = "data-ab-key-light-nav";
+  const ACTIVE_ATTR = "data-ab-key-nav-active";
 
-  const DRAWER_PAPER_RULES = `
-    background-color: transparent !important;
-    background-image: linear-gradient(to right, rgb(255 255 255) 0px, rgb(254 254 254) 48px, transparent 48px, transparent 100%) !important;
-    border-right-width: medium !important;
-    border-right-style: none !important;
-    border-right-color: currentcolor !important;
-    display: flex !important;
-    -webkit-box-pack: justify !important;
-    justify-content: space-between !important;
-    min-width: 48px !important;
-    overflow: visible !important;
-  `;
+  const SIDEBAR = '[data-testid="sidebar"]';
+  const NAV_BUTTON = '[data-testid^="sidebar-section-button-"]';
+  const SECTION_LINK = "a[href^='/app/']";
+  const NAV_PREFIX = "sidebar-section-button-";
+  // Wrapped in a link to the current page, so their href is not a section of its own.
+  const NOT_SECTIONS = ["Search", "More"];
 
-  const WHITE_ACCENT_RULES = `
-    color: #f4f0ff !important;
-    background-color: #ffffff !important;
-    border-color: rgba(186, 168, 230, 0.35) !important;
-  `;
-
-  const LAVENDER_ACCENT_RULES = `
-    color: #f4f0ff !important;
-    background-color: #b8a8d8 !important;
-    border-color: rgba(186, 168, 230, 0.45) !important;
-  `;
-
-  const ICON_RULES = `
-    color: #302048 !important;
-    fill: #302048 !important;
-  `;
+  const ICON = "#302048";
+  const ACTIVE_BG = "#b8a8d8";
+  const HOVER_BG = "rgba(48, 32, 72, 0.08)";
 
   function buildCss() {
-    const drawerSelectors = [
-      ".css-14gnnq .MuiDrawer-paper",
-      ".css-x08bwa.MuiDrawer-paper",
-      ".css-h6rx5j .MuiDrawer-paper",
-      ".MuiDrawer-root .MuiDrawer-paper"
-    ].join(",\n");
-
-    const whiteAccentSelectors = [
-      ".css-s8husd",
-      ".css-s9zrci",
-      ".MuiDrawer-root .css-s8husd",
-      ".MuiDrawer-root .css-s9zrci"
-    ].join(",\n");
-
-    const lavenderAccentSelectors = [
-      ".css-s7gj1v",
-      ".MuiDrawer-root .css-s7gj1v"
-    ].join(",\n");
-
     return `
-/* AB-key light theme nav */
-${drawerSelectors} {
-  ${DRAWER_PAPER_RULES}
+/* AB-key light theme nav (stable selectors only) */
+${SIDEBAR} .MuiDrawer-paper {
+  background-color: transparent !important;
+  background-image: linear-gradient(to right, rgb(255 255 255) 0px, rgb(254 254 254) 48px, transparent 48px, transparent 100%) !important;
+  border-right: none !important;
 }
 
-${whiteAccentSelectors} {
-  ${WHITE_ACCENT_RULES}
+${SIDEBAR} .MuiDrawer-paper div:has(> img) {
+  background-color: #ffffff !important;
+  border-color: rgba(186, 168, 230, 0.35) !important;
 }
 
-${lavenderAccentSelectors} {
-  ${LAVENDER_ACCENT_RULES}
+${SIDEBAR} ${NAV_BUTTON},
+${SIDEBAR} ${NAV_BUTTON} svg {
+  color: ${ICON} !important;
+  fill: ${ICON} !important;
 }
 
-${whiteAccentSelectors} svg,
-${lavenderAccentSelectors} svg {
-  ${ICON_RULES}
+${SIDEBAR} ${NAV_BUTTON} {
+  background-color: transparent !important;
+}
+
+${SIDEBAR} ${NAV_BUTTON}:hover {
+  background-color: ${HOVER_BG} !important;
+}
+
+${SIDEBAR} ${NAV_BUTTON}[${ACTIVE_ATTR}] {
+  background-color: ${ACTIVE_BG} !important;
 }
 `;
   }
+
+  // ---------------------------------------------------------------------------
+  // Current section (exported for tests)
+  // ---------------------------------------------------------------------------
+
+  /** "/app/spaces" for a section link; null for deeper links (/app/spaces/<id>). */
+  function sectionPath(href) {
+    let path;
+    try {
+      path = new URL(href, "https://app.abacum.io").pathname.replace(/\/+$/, "");
+    } catch {
+      return null;
+    }
+    return /^\/app\/[^/]+$/.test(path) ? path : null;
+  }
+
+  function isCurrentSection(section, pathname) {
+    return Boolean(section) && (pathname === section || pathname.startsWith(`${section}/`));
+  }
+
+  function markActive() {
+    const pathname = globalThis.location?.pathname || "";
+    for (const button of document.querySelectorAll(`${SIDEBAR} ${NAV_BUTTON}`)) {
+      const name = (button.getAttribute("data-testid") || "").slice(NAV_PREFIX.length);
+      const link = NOT_SECTIONS.includes(name) ? null : button.closest?.(SECTION_LINK);
+      const active = isCurrentSection(sectionPath(link?.getAttribute("href")), pathname);
+      if (active && !button.hasAttribute(ACTIVE_ATTR)) button.setAttribute(ACTIVE_ATTR, "");
+      if (!active && button.hasAttribute(ACTIVE_ATTR)) button.removeAttribute(ACTIVE_ATTR);
+    }
+  }
+
+  function clearActive() {
+    for (const button of document.querySelectorAll(`[${ACTIVE_ATTR}]`)) button.removeAttribute(ACTIVE_ATTR);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Style + lifecycle
+  // ---------------------------------------------------------------------------
 
   function getStyleEl() {
     return document.getElementById(STYLE_ID);
   }
 
   function ensureStyleEl() {
-    let el = getStyleEl();
-    if (el) return el;
-    el = document.createElement("style");
+    if (getStyleEl()) return;
+    const el = document.createElement("style");
     el.id = STYLE_ID;
-    el.type = "text/css";
     el.textContent = buildCss();
     (document.head || document.documentElement).appendChild(el);
-    return el;
   }
 
-  function removeStyleEl() {
-    getStyleEl()?.remove();
-    document.documentElement.removeAttribute(ROOT_ATTR);
-  }
-
-  async function isEnabled() {
-    const data = await chrome.storage.local.get(CONFIG_KEY);
-    const config = data?.[CONFIG_KEY];
-    return Boolean(config?.lightThemeNavEnabled);
-  }
-
-  // Abacum is a React app and may rebuild <head>; re-add the style if it disappears.
-  // Only <head> children are watched, and only while the feature is on. (Previously the whole
-  // document's class changes were observed even when the feature was off — expensive on
-  // AG Grid pages, which change classes constantly.)
   let observer = null;
+
+  function refresh() {
+    if (!getStyleEl()) ensureStyleEl();
+    markActive();
+  }
 
   function startObserver() {
     if (observer) return;
-    observer = new MutationObserver(() => {
-      if (!getStyleEl()) ensureStyleEl();
-    });
-    observer.observe(document.head || document.documentElement, { childList: true });
+    observer = new MutationObserver(refresh);
+    // <head> only: our <style> may be dropped by React, and <title> text changes on navigation.
+    observer.observe(document.head || document.documentElement, { childList: true, subtree: true, characterData: true });
+    globalThis.addEventListener?.("popstate", refresh);
   }
 
   function stopObserver() {
     observer?.disconnect();
     observer = null;
+    globalThis.removeEventListener?.("popstate", refresh);
   }
 
   function enable() {
     ensureStyleEl();
     document.documentElement.setAttribute(ROOT_ATTR, "true");
+    markActive();
     startObserver();
   }
 
   function disable() {
     stopObserver();
-    removeStyleEl();
+    getStyleEl()?.remove();
+    document.documentElement.removeAttribute(ROOT_ATTR);
+    clearActive();
   }
 
   async function applySetting() {
-    const enabled = await isEnabled();
-    if (enabled) {
-      enable();
-    } else {
-      disable();
-    }
-  }
-
-  function onConfigChanged(changes) {
-    if (!changes[CONFIG_KEY]) return;
-    applySetting();
+    const data = await chrome.storage.local.get(CONFIG_KEY);
+    if (data?.[CONFIG_KEY]?.lightThemeNavEnabled) enable();
+    else disable();
   }
 
   function init() {
     applySetting();
-    chrome.storage.onChanged.addListener(onConfigChanged);
+    chrome.storage.onChanged.addListener((changes) => {
+      if (changes[CONFIG_KEY]) applySetting();
+    });
   }
+
+  globalThis.AbKeyLightNav = Object.freeze({ buildCss, sectionPath, isCurrentSection, markActive });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, { once: true });

@@ -94,6 +94,13 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v0.10.1
+
+- **Fix light theme nav** (Options → Features). An Abacum release renamed the hashed classes it relied on, so the icons stayed white on the light column. It now uses only stable hooks: `data-testid="sidebar"`, the `sidebar-section-button-*` buttons and the logo `<img>`. Icons are dark, hover is a light tint, the current section is lavender.
+  - Abacum marks the current section only with a hashed class, so AB-key marks it itself from the URL (`/app/modules/…` → Models) and updates it on in-app navigation and Back. Search and More are never highlighted.
+  - The right drawer (AI chat, side panels) is no longer restyled by mistake.
+  - Still no work at all while the feature is off.
+
 ### v0.10.0
 
 New hotkeys (config schema v7; a key you already use for your own action is not taken over):

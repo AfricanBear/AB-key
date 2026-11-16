@@ -47,7 +47,8 @@ function createEnv(config, { clientName = "Acme Energy", title = "01a. Natural P
     addEventListener() {},
     getElementById: (id) => nodes.get(id) || null,
     createElement: () => ({ id: "", textContent: "" }),
-    querySelector: (selector) => (selector.startsWith("img[alt]") ? img : null)
+    querySelector: (selector) => (selector.startsWith("img[alt]") ? img : null),
+    querySelectorAll: () => []
   };
   class FakeObserver {
     constructor(callback) {
@@ -113,14 +114,18 @@ test("light nav: no observer at all while the feature is off (default)", async (
   assert.equal(env.nodes.get("ab-key-light-nav-styles"), undefined);
 });
 
-test("light nav: when on, watches only <head> children, and stops when turned off", async () => {
+test("light nav: when on, watches only <head> (style + <title>), and stops when turned off", async () => {
   const on = { ...createDefaultConfig(), lightThemeNavEnabled: true };
   const env = createEnv(on);
   await env.run("src/content/abacum-light-nav.js");
   assert.ok(env.nodes.get("ab-key-light-nav-styles"), "style injected");
   assert.equal(env.active().length, 1);
   assert.equal(env.active()[0].target, env.head);
-  assert.equal(JSON.stringify(env.active()[0].options), JSON.stringify({ childList: true }), "no subtree, no attributes");
+  // subtree of <head> only: <title> text changes on in-app navigation; no attribute watching
+  assert.equal(
+    JSON.stringify(env.active()[0].options),
+    JSON.stringify({ childList: true, subtree: true, characterData: true })
+  );
 
   env.nodes.get("ab-key-light-nav-styles").remove(); // React rebuilt <head>
   env.active()[0].callback();

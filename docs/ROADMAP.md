@@ -9,7 +9,7 @@ No feature is planned right now (formula hints beside the Cell Editor shipped in
 ## Backlog (ideas)
 
 - Toolbar rail: verify behaviour with a panel open and on a single version page (v0.6.0 checked only with panels closed)
-- Light theme nav and tab title still rely on hashed `css-*` classes / first `img[alt]`
+- Tab title still relies on the first `img[alt]` (light theme nav moved to stable selectors in v0.10.1)
 
 - Shortkeys.txt import utility
 - Diagnostics panel in options
