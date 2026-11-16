@@ -20,7 +20,9 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `toolbar-rail.js` — right toolbar buttons by position (`globalThis.AbKeyToolbarRail`).
   - `sidebar-nav.js` — left navigation links after Library by position (`globalThis.AbKeySidebarNav`).
   - `ab-key-panel-host.js` — in-page A+B key panel (iframe of `src/popup/popup.html`).
-  - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints.
+  - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints,
+    dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`, the
+    only `"world": "MAIN"` script: no `chrome.*` there, talk via `CustomEvent` with JSON detail).
 - `src/shared/config-schema.js` — defaults + migrations (schema v7). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
@@ -63,6 +65,12 @@ Abacum releases.
   Cancel `testid-dbv-modal-cancel`, Apply `testid-dbv-modal-accept` (disabled while unchanged).
 - Datasets: data is in the **Viewer** tab; the URL stays `/app/datasets/<id>/manager`
   (`/viewer` is a 404). AG Grid range selection: `ag-cell-range-selected*`.
+- Dataset Viewer grid: `.ag-root-wrapper` with header `col-id="_abacum_type"` (pinned left, the
+  Loads tab grid has none) and `_abacum_status` (pinned right); server-side row model. Data columns
+  have `lockPinned: true`, the context menu is off and the column menu has only the filter tab.
+  The grid api is reachable only in the page world via the React fiber of `.ag-root-wrapper`
+  (hook state ~4 levels up); `applyColumnState` pins despite `lockPinned`. Abacum handles
+  `onColumnMoved` (may persist order) but not pinned/resized. Loads → Viewer re-creates the grid.
 - Model pages: `/app/modules/...`. `<title>` lives in `<head>` and changes on in-app navigation.
 
 ## Working agreements
