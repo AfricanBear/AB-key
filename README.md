@@ -94,6 +94,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.1.2
+
+- **Version number** next to the title in the A+B key panel and on the Options page (read from `manifest.json`), so it is easy to see which build is installed.
+
 ### v1.1.1
 
 - **Two-row column headers in dataset Viewer** (Options → Features, on by default). The header is twice as tall: the type icon, the full column name and the sort arrow on top; the pin, filter and options buttons below, always visible (Abacum shows filter and options only on hover). Off: one row as before.
