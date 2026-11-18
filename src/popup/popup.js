@@ -3,6 +3,10 @@ import { CONFIG_KEY, isNavActionId, isRailActionId, migrateConfig } from "../sha
 const hotkeyList = document.getElementById("hotkeyList");
 const emptyState = document.getElementById("emptyState");
 const optionsButton = document.getElementById("optionsButton");
+
+// Extension version from manifest.json, next to the title.
+const appVersion = document.getElementById("appVersion");
+if (appVersion) appVersion.textContent = `v${chrome.runtime.getManifest().version}`;
 const panelParams = new URLSearchParams(location.search);
 const panelHostname = panelParams.get("host") || "app.abacum.io";
 // Page path the panel was opened on; null if unknown (then path-scoped hotkeys are shown).

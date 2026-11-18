@@ -49,6 +49,7 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Click a single cell: tooltip disappears.
   - Selection reaching the last rendered row while the grid can scroll: "Visible rows only".
   - Models: no AB-key tooltip (Abacum's own one is unchanged). Toggle off in Options: no tooltip.
+- Version number: the A+B key panel and the Options page show "A+B key v<manifest version>" in the title.
 - Pin columns in dataset Viewer (dataset → **Viewer** tab):
   - Hover a data column header: a grey pin appears left of the filter button; the service columns (checkbox, status) have none.
   - Click the pin: the column moves next to the checkbox column, the pin turns purple and stays visible; the header does not sort and does not start a drag.

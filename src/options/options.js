@@ -12,6 +12,10 @@ const datasetTwoRowHeaderToggle = document.getElementById("datasetTwoRowHeaderEn
 const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
 
+// Extension version from manifest.json, next to the title.
+const appVersion = document.getElementById("appVersion");
+if (appVersion) appVersion.textContent = `v${chrome.runtime.getManifest().version}`;
+
 if (brandLogo) {
   brandLogo.src = chrome.runtime.getURL("assets/icons/ab-key.png");
 }
