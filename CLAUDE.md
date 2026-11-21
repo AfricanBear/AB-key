@@ -52,8 +52,12 @@ Abacum releases.
   rewrites that style on editor scroll. The instance is `.CodeMirror`'s `CodeMirror` property
   (page world only); Abacum's `extraKeys` map Ctrl/Cmd-Backspace to `setValue("")`, Esc to
   cancel; variable chips are atomic marks (`replacedWith` widget) over text like `v{{Name}}`.
-  Esc first closes open hints, a second Esc cancels. Multiple selections work (`setSelections`);
-  no match-highlight addon is loaded; `CodeMirror.commands.selectNextOccurrence` exists.
+  Esc first closes open hints, a second Esc cancels. Multiple selections work (`setSelections`), but
+  show-hint refuses several selections. Chips are marked only when the editor opens and when a
+  hint is picked (`origin "complete"`, the mark comes after the change) — text set by code stays
+  raw `v{{..}}`, and `setValue` drops every chip. An operator hint inserts ` -` and steps over the
+  next space. Enter with no hint list open = Apply, Esc = Cancel: test with the Cancel button and
+  check Save. No match-highlight addon; `CodeMirror.commands.selectNextOccurrence` exists.
 - Left nav: `button[data-testid="sidebar-section-button-<Name>"]` inside `a[href="/app/..."]`.
   After Library: Spaces, Models, Versions, Dimensions, Datasets, Integrations, More (More is a
   menu wrapped in a link to the current page; so is Search). The current section has no stable
