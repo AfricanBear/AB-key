@@ -2,7 +2,7 @@
 
 Planned features not yet shipped. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what is already released.
 
-No feature is planned right now (pinned columns in dataset Viewer shipped in v1.1.0, two-row headers in v1.1.1).
+No feature is planned right now (Ctrl+Backspace deletes one word in formulas shipped in v1.2.0).
 
 ---
 

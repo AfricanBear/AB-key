@@ -94,6 +94,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.2.0
+
+- **Ctrl+Backspace deletes one word in formulas** (Options → Features, on by default). Abacum binds Ctrl+Backspace (and Cmd+Backspace) in the formula editor to clearing the whole formula; now it deletes the word left of the cursor, like any text field. A variable chip is deleted as a whole, a selection is deleted as is. On Mac, Cmd+Backspace deletes to the start of the line. Ctrl+Delete (next word) already worked and is unchanged.
+  - The CodeMirror instance is only visible in the page world, so a small `"world": "MAIN"` script handles the key; the isolated script mirrors the option into an attribute on `<html>`.
+
 ### v1.1.2
 
 - **Version number** next to the title in the A+B key panel and on the Options page (read from `manifest.json`), so it is easy to see which build is installed.

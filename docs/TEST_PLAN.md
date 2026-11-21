@@ -81,6 +81,11 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Editor near the right edge of a narrow window: list on the left of the editor.
   - Cancel / Apply / Esc: no AB-key work continues (no observers), Save state unchanged by the script.
   - Dataset selection-sum tooltip and other dropdowns unaffected.
+- Ctrl+Backspace in formulas (Options → Features, on by default; Models, double-click a Logic cell):
+  - Cursor at the end: each Ctrl+Backspace deletes one word / operator; a variable or value chip goes as a whole; the rest of the formula stays. Hints keep working.
+  - Text selected: only the selection is deleted.
+  - Ctrl+Delete deletes the next word; plain Backspace deletes one character; Cancel / Esc restores the formula, Save stays disabled.
+  - Off: Ctrl+Backspace clears the whole formula again (Abacum's behaviour); switching applies to open tabs without reload.
 - Left navigation (Alt+Shift+1–9, any Abacum page):
   - Alt+Shift+1 Spaces, 2 Models, 3 Versions, 4 Dimensions, 5 Datasets, 6 Integrations (order as in the sidebar after Library).
   - Alt+Shift+7–9 do nothing while there are only six links; "More" is never opened.
