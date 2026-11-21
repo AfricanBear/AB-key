@@ -271,6 +271,21 @@ textarea::placeholder {
   line-height: 1.4;
 }
 
+/* Abacum's f icon (transformed dataset columns): 20×20 blue chip with an italic f. */
+.fx-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0 2px;
+  border-radius: 4px;
+  background: #dbeafe;
+  color: #193cb8;
+  font: italic 600 14px/1 Georgia, "Times New Roman", serif;
+  vertical-align: middle;
+}
+
 label.toggle-text {
   cursor: pointer;
 }

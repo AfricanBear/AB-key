@@ -97,6 +97,7 @@ For Opera-labeled packaging:
 ### v1.3.0
 
 - **f chip selects the column's transformation** (Options → Features, on by default). In a dataset's **Viewer** tab with the **Transform** panel open, clicking the f chip in a transformed column's header now also selects the last transformation step that writes that column, as if you clicked the step itself. Abacum already shows the column in the panel header on that click, but the steps list kept its old selection. Clicks on cells (selection sum) and on the column name (sorting) are unchanged; with the panel closed nothing happens.
+  - Abacum gives the f chip a pointer cursor but no hover state; now it darkens with a thin ring on hover, a bit more on press, and shows the tooltip "Show transformation step", like the pin button.
 
 ### v1.2.0
 
