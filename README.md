@@ -94,6 +94,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.3.0
+
+- **Edit all matches in a formula** (Options → Features, on by default). Select part of a formula and the same text elsewhere in it is highlighted (variable chips get an outline). **Alt+Backspace** then deletes every match and leaves a cursor at each, so what you type goes everywhere at once. Ctrl+Z undoes it in one step; Esc goes back to one cursor (a second Esc cancels the editor as before). A match that cuts through a variable chip is skipped; with fewer than two matches Alt+Backspace keeps its usual behaviour.
+  - Uses CodeMirror's own multiple selections and an overlay for the highlight; the formula text and Abacum's chip marks are not changed until you edit.
+
 ### v1.2.0
 
 - **Ctrl+Backspace deletes one word in formulas** (Options → Features, on by default). Abacum binds Ctrl+Backspace (and Cmd+Backspace) in the formula editor to clearing the whole formula; now it deletes the word left of the cursor, like any text field. A variable chip is deleted as a whole, a selection is deleted as is. On Mac, Cmd+Backspace deletes to the start of the line. Ctrl+Delete (next word) already worked and is unchanged.

@@ -86,6 +86,12 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Text selected: only the selection is deleted.
   - Ctrl+Delete deletes the next word; plain Backspace deletes one character; Cancel / Esc restores the formula, Save stays disabled.
   - Off: Ctrl+Backspace clears the whole formula again (Abacum's behaviour); switching applies to open tabs without reload.
+- Edit all matches in formulas (Options → Features, on by default; Models, double-click a Logic cell with a repeated variable or text):
+  - Select a word / number that occurs again: the other occurrences are highlighted; select a variable chip: the same chips get an outline. Cursor only or one occurrence: no highlight.
+  - Alt+Backspace: every occurrence is deleted, a cursor blinks at each; typing appears in all places; hints still open and a picked hint is inserted (check where).
+  - Ctrl+Z restores all occurrences in one step. Esc with several cursors leaves one cursor and keeps the edit; with hints open, Esc closes hints first; second Esc cancels as before.
+  - A match inside a chip name (e.g. selecting part of a variable name typed as text) does not break the chip.
+  - Off: no highlight; Alt+Backspace does nothing special; switching applies to open tabs without reload.
 - Left navigation (Alt+Shift+1–9, any Abacum page):
   - Alt+Shift+1 Spaces, 2 Models, 3 Versions, 4 Dimensions, 5 Datasets, 6 Integrations (order as in the sidebar after Library).
   - Alt+Shift+7–9 do nothing while there are only six links; "More" is never opened.

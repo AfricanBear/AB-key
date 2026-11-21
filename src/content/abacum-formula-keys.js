@@ -1,8 +1,11 @@
-// Word-wise delete in the Abacum formula editor — settings part.
+// Formula editor keys — settings part.
 //
-// Reads config.formulaWordDeleteEnabled (Options page) and mirrors it into the
-// data-ab-key-word-delete attribute on <html>. The page-world script abacum-formula-keys-main.js
-// checks that attribute on every Ctrl/Cmd+Backspace, so toggling applies to open tabs at once.
+// Mirrors two Options page settings into attributes on <html>:
+// - config.formulaWordDeleteEnabled -> data-ab-key-word-delete (Ctrl+Backspace deletes one word)
+// - config.formulaMultiEditEnabled  -> data-ab-key-multi-edit (highlight matches, Alt+Backspace
+//   edits all of them at once)
+// The page-world script abacum-formula-keys-main.js checks them on every key, so toggling applies
+// to open tabs at once.
 // Classic content script; no ES modules here.
 (function () {
   "use strict";
@@ -11,23 +14,27 @@
   globalThis.__abKeyFormulaKeysReady = true;
 
   const CONFIG_KEY = "mv3ClickAutomation.config"; // keep in sync with src/shared/config-schema.js
-  const ENABLED_ATTR = "data-ab-key-word-delete"; // keep in sync with abacum-formula-keys-main.js
+  // Attribute -> config field; keep the attributes in sync with abacum-formula-keys-main.js.
+  const SETTINGS = [
+    ["data-ab-key-word-delete", "formulaWordDeleteEnabled"],
+    ["data-ab-key-multi-edit", "formulaMultiEditEnabled"]
+  ];
 
-  function setEnabled(enabled) {
-    if (enabled) document.documentElement.setAttribute(ENABLED_ATTR, "on");
-    else document.documentElement.removeAttribute(ENABLED_ATTR);
+  // Missing setting (config not migrated yet) counts as enabled, matching the defaults.
+  function apply(config) {
+    for (const [attr, field] of SETTINGS) {
+      if (config?.[field] !== false) document.documentElement.setAttribute(attr, "on");
+      else document.documentElement.removeAttribute(attr);
+    }
   }
-
-  // Missing setting (config not migrated yet) counts as enabled, matching the default.
-  const isEnabled = (config) => config?.formulaWordDeleteEnabled !== false;
 
   chrome.storage.local
     .get(CONFIG_KEY)
-    .then((data) => setEnabled(isEnabled(data?.[CONFIG_KEY])))
-    .catch(() => setEnabled(true));
+    .then((data) => apply(data?.[CONFIG_KEY]))
+    .catch(() => apply(null));
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local" || !changes[CONFIG_KEY]) return;
-    setEnabled(isEnabled(changes[CONFIG_KEY].newValue));
+    apply(changes[CONFIG_KEY].newValue);
   });
 })();
