@@ -94,6 +94,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.3.0
+
+- **f chip selects the column's transformation** (Options → Features, on by default). In a dataset's **Viewer** tab with the **Transform** panel open, clicking the f chip in a transformed column's header now also selects the last transformation step that writes that column, as if you clicked the step itself. Abacum already shows the column in the panel header on that click, but the steps list kept its old selection. Clicks on cells (selection sum) and on the column name (sorting) are unchanged; with the panel closed nothing happens.
+
 ### v1.2.0
 
 - **Ctrl+Backspace deletes one word in formulas** (Options → Features, on by default). Abacum binds Ctrl+Backspace (and Cmd+Backspace) in the formula editor to clearing the whole formula; now it deletes the word left of the cursor, like any text field. A variable chip is deleted as a whole, a selection is deleted as is. On Mac, Cmd+Backspace deletes to the start of the line. Ctrl+Delete (next word) already worked and is unchanged.
