@@ -86,11 +86,12 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Text selected: only the selection is deleted.
   - Ctrl+Delete deletes the next word; plain Backspace deletes one character; Cancel / Esc restores the formula, Save stays disabled.
   - Off: Ctrl+Backspace clears the whole formula again (Abacum's behaviour); switching applies to open tabs without reload.
-- Edit all matches in formulas (Options → Features, on by default; Models, double-click a Logic cell with a repeated variable or text; close the editor with Cancel and check Save stays disabled):
+- Replace all matches in formulas (Options → Features, on by default; Models, double-click a Logic cell with a repeated variable or text; close the editor with Cancel and check Save stays disabled):
   - Select a word / number that occurs again: the other occurrences are highlighted; select a variable chip: the same chips get an outline. Cursor only or one occurrence: no highlight.
-  - Alt+Backspace: every occurrence is deleted; one real cursor, orange ghost cursors at the other places. Typing and Backspace appear everywhere.
-  - Hints at the real cursor: list as without the extension; picking an operator (e.g. Minus) or a variable inserts it everywhere, a variable as a chip in every place; linking continues after the pick.
-  - Ctrl+Z undoes the last edit in all places at once and ends linking. Esc ends linking and keeps the text (with hints open, Esc closes them first); the next Esc cancels the editor as before. Clicking elsewhere and typing: only that spot changes.
+  - Alt+Backspace: every occurrence is deleted; the cursor stays in the selected place, dashed orange markers at the other places.
+  - Typing, hints (operator and variable picks with Enter / click), arrows inside the place and Ctrl+Backspace behave as without the extension; nothing changes at the markers yet.
+  - Enter with no hint list open: the edit appears at every marker (variables as chips), the editor stays open; the next Enter applies the formula. Same with Esc (next Esc cancels), with the cursor moved out of the place (arrows / click), and with a click on Apply (Apply then gets the full formula).
+  - Ctrl+Z right after: only the copies are undone. Undo while editing the place: markers disappear, nothing is copied.
   - Known Abacum quirk (also without the extension): typing right before `.` (e.g. where a `Var.t-1` chip was) makes the hint replace the `.`.
   - Off: no highlight; Alt+Backspace does nothing special; switching applies to open tabs without reload.
 - Left navigation (Alt+Shift+1–9, any Abacum page):

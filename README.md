@@ -96,8 +96,8 @@ For Opera-labeled packaging:
 
 ### v1.3.0
 
-- **Edit all matches in a formula** (Options → Features, on by default). Select part of a formula and the same text elsewhere in it is highlighted (variable chips get an outline). **Alt+Backspace** deletes every match and starts linked editing: the real cursor stays where your selection was, the other places show an orange ghost cursor, and everything you type there — including hints you pick, which become variable chips everywhere — is copied to every place. Ctrl+Z undoes the last edit everywhere and ends linking; Esc ends linking and keeps the text (with hints open, Esc closes them first; a second Esc cancels the editor as before). Moving the cursor or editing outside the place also ends linking. A match that cuts through a variable chip is skipped; with fewer than two matches Alt+Backspace keeps its usual behaviour.
-  - Not CodeMirror's native multi-cursor: Abacum's hints only work with one selection. The copies are made inside the same CodeMirror operation (one undo step), and the chip marks Abacum adds when a hint is picked are copied to the other places.
+- **Replace all matches in a formula** (Options → Features, on by default). Select part of a formula and the same text elsewhere in it is highlighted (variable chips get an outline). **Alt+Backspace** deletes every match: the cursor stays where your selection was and the other places get a dashed orange marker. Edit that one place as usual — hints, arrows and Ctrl+Backspace work — then press **Enter** (or Esc, or move the cursor out of the place, or leave the editor): the edit is copied to every marked place, picked variables as chips. That Enter / Esc does not apply / cancel the formula; the next one does. Ctrl+Z undoes the copy in one step. A match that cuts through a variable chip is skipped; with fewer than two matches Alt+Backspace keeps its usual behaviour.
+  - Why not typing in all places at once: Abacum's hint parser expects edits in one place, and its hints refuse several cursors. The copy is one CodeMirror operation; the chip marks Abacum adds when a hint is picked are copied with it.
 
 ### v1.2.0
 

@@ -59,7 +59,9 @@ function loadMain({ enabled = true, multiEdit = true } = {}) {
       getElementById: (id) => head.byId(id),
       createElement: () => ({ id: "", textContent: "" })
     },
-    window: { addEventListener: (type, fn, capture) => listeners.push({ type, fn, capture }) }
+    window: { addEventListener: (type, fn, capture) => listeners.push({ type, fn, capture }) },
+    setTimeout,
+    clearTimeout
   };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
@@ -260,6 +262,13 @@ function fakeCodeMirror(text, { chips = [] } = {}) {
     if (from === to) return inclusive ? p + len : p;
     return p === to ? from + len : from;
   }
+  // A bookmark keeps its place when text is typed on it (CodeMirror's default insertLeft: false).
+  function moveBookmark(p, from, to, len) {
+    if (p < from) return p;
+    if (p > to) return p + len - (to - from);
+    if (from === to) return p;
+    return p === to ? from + len : from;
+  }
   const movePoint = (p, from, to, len) => (p < from ? p : p > to ? p + len - (to - from) : from + len);
 
   function markText(fromPos, toPos, options = {}) {
@@ -317,6 +326,7 @@ function fakeCodeMirror(text, { chips = [] } = {}) {
         mark.end = Math.max(mark.start, moveEnd(mark.end, mark.inclusiveRight, from, to, len));
         if (mark.start === mark.end && mark.clearWhenEmpty !== false) mark.clear();
       }
+      for (const bookmark of bookmarks) bookmark.at = moveBookmark(bookmark.at, from, to, len);
       ranges = ranges.map((r) => ({ anchor: movePoint(r.anchor, from, to, len), head: movePoint(r.head, from, to, len) }));
       emit("change", { from: fromPos, to: toPos, origin, text: insert.split("\n") });
     },
@@ -341,6 +351,7 @@ function fakeCodeMirror(text, { chips = [] } = {}) {
     markText,
     setBookmark(pos, options) {
       const bookmark = { at: cm.indexFromPos(pos), ...options, cleared: false };
+      bookmark.find = () => (bookmark.cleared ? undefined : cm.posFromIndex(bookmark.at));
       bookmark.clear = () => {
         bookmark.cleared = true;
         bookmarks.splice(bookmarks.indexOf(bookmark), 1);
@@ -349,6 +360,16 @@ function fakeCodeMirror(text, { chips = [] } = {}) {
       return bookmark;
     },
     operation: (fn) => fn(),
+    focused: true,
+    hasFocus: () => cm.focused,
+    focus() {
+      cm.focused = true;
+      emit("focus");
+    },
+    blur() {
+      cm.focused = false;
+      emit("blur");
+    },
     getAllMarks: () => marks.slice(),
     execCommand: (name) => commands.push(name),
     isReadOnly: () => false,
@@ -397,7 +418,8 @@ function overlayHits(overlay, line) {
   return hits;
 }
 
-const linkedRegions = (cm) => cm.allMarks().filter((mark) => mark.className === "ab-key-linked");
+const pendingMarkers = (cm) => cm.bookmarks.filter((b) => b.widget && b.widget.className === "ab-key-pending");
+const editedMarks = (cm) => cm.allMarks().filter((mark) => mark.className === "ab-key-edited");
 
 test("findMatches: non-overlapping, left to right, skips matches that cut through a chip", () => {
   const main = loadMain().main;
@@ -424,53 +446,117 @@ test("findMatches: non-overlapping, left to right, skips matches that cut throug
   assert.deepEqual(plain(main.cursorsAfterDelete([[0, 1], [1, 2]])), [0], "adjacent matches share one place");
 });
 
-test("Alt+Backspace deletes every match; one real cursor, typing is copied to the other places", () => {
+test("Alt+Backspace deletes every match; typing stays in one place until Enter copies it", () => {
   const page = loadMain();
   const { cm, input } = fakeCodeMirror("IF x > 0 THEN x * 2 ELSE x");
   cm.select(14, 15); // the second x
   const event = page.press(input, { altKey: true });
   assert.ok(event.prevented && event.stopped);
   assert.equal(cm.getValue(), "IF  > 0 THEN  * 2 ELSE ");
-  assert.equal(cm.listSelections().length, 1, "a single selection, so Abacum's hints keep working");
-  assert.equal(cm.cursor(), 13, "the real cursor is where the selected match was");
-  assert.equal(cm.bookmarks.length, 2, "ghost cursors at the other places");
-  assert.ok(page.main.isLinked(cm));
+  assert.equal(cm.listSelections().length, 1);
+  assert.equal(cm.cursor(), 13, "the cursor is where the selected match was");
+  assert.equal(pendingMarkers(cm).length, 2, "markers at the other places");
+  assert.equal(editedMarks(cm).length, 1);
 
   cm.type("y1");
+  assert.equal(cm.getValue(), "IF  > 0 THEN y1 * 2 ELSE ", "Abacum sees an edit in one place only");
+  assert.ok(page.main.isPending(cm));
+
+  const enter = page.press(input, { key: "Enter" });
+  assert.ok(enter.prevented && enter.stopped, "this Enter does not apply the formula");
   assert.equal(cm.getValue(), "IF y1 > 0 THEN y1 * 2 ELSE y1");
-  assert.equal(cm.cursor(), 17);
-  assert.deepEqual(
-    plain(cm.bookmarks.map((b) => b.at).sort((a, b) => a - b)),
-    [5, 29],
-    "ghosts follow the end of each copy"
-  );
+  assert.equal(page.main.isPending(cm), false);
+  assert.equal(pendingMarkers(cm).length, 0);
+  assert.equal(editedMarks(cm).length, 0);
+  assert.equal(page.press(input, { key: "Enter" }).prevented, false, "the next Enter is Abacum's (Apply)");
 });
 
-test("a picked hint is copied with its chip to every place", async () => {
+test("the copy keeps picked hints as chips, with Abacum's widget", () => {
   const page = loadMain();
   const { cm, input } = fakeCodeMirror("a + 1 + a");
   cm.select(0, 1);
   page.press(input, { altKey: true });
-  assert.equal(cm.getValue(), " + 1 + ");
   cm.type("Rev");
-  assert.equal(cm.getValue(), "Rev + 1 + Rev");
   const chip = cm.pickHint(0, "v{{Revenue}}");
+  assert.equal(cm.getValue(), "v{{Revenue}}  + 1 + ");
+  page.press(input, { key: "Escape" });
   assert.equal(cm.getValue(), "v{{Revenue}}  + 1 + v{{Revenue}} ");
-  await tick();
-  const atomic = cm.allMarks().filter((mark) => mark.atomic);
-  assert.equal(atomic.length, 2);
-  const copy = atomic.find((mark) => mark !== chip);
-  assert.deepEqual(plain([copy.start, copy.end]), [20, 32], "the copy covers the copied chip text");
-  assert.equal(copy.replacedWith.clonedFrom, chip.replacedWith, "same widget as Abacum's chip");
-  assert.equal(copy.handleMouseEvents, true);
-
-  cm.type("*");
-  assert.equal(cm.getValue(), "v{{Revenue}} * + 1 + v{{Revenue}} *");
-  await tick();
-  assert.equal(cm.allMarks().filter((mark) => mark.atomic).length, 2, "chip copies are refreshed, not piled up");
+  const copies = cm.allMarks().filter((mark) => mark.atomic && mark !== chip);
+  assert.equal(copies.length, 1);
+  assert.deepEqual(plain([copies[0].start, copies[0].end]), [20, 32]);
+  assert.equal(copies[0].replacedWith.clonedFrom, chip.replacedWith);
+  assert.equal(copies[0].handleMouseEvents, true);
 });
 
-test("an operator hint that steps over the next space keeps linked editing going", () => {
+test("Enter / Esc with the hint list open belong to the hints; other Enter keys copy, then run", () => {
+  const page = loadMain();
+  const { cm, input } = fakeCodeMirror("a + a");
+  cm.select(0, 1);
+  page.press(input, { altKey: true });
+  cm.type("b");
+  cm.state.completionActive = {};
+  assert.equal(page.press(input, { key: "Enter" }).prevented, false, "Enter picks the hint");
+  assert.equal(page.press(input, { key: "Escape" }).prevented, false, "Esc closes the hints");
+  assert.ok(page.main.isPending(cm));
+  delete cm.state.completionActive;
+
+  const ctrlEnter = page.press(input, { key: "Enter", ctrlKey: true });
+  assert.equal(ctrlEnter.prevented, false, "Abacum's Ctrl+Enter still runs");
+  assert.equal(cm.getValue(), "b + b", "after the copy");
+});
+
+test("leaving the place copies the edit: arrows inside it do not", () => {
+  const page = loadMain();
+  const { cm, input } = fakeCodeMirror("(a IS 1) OR (a IS 2)");
+  cm.select(1, 2);
+  page.press(input, { altKey: true });
+  cm.type("abc");
+  cm.setCursor(cm.posFromIndex(2)); // Left x2, still inside "abc"
+  cm.type("X");
+  assert.ok(page.main.isPending(cm), "moving inside the place keeps it pending");
+  cm.setCursor(cm.posFromIndex(10)); // out of the place
+  assert.equal(page.main.isPending(cm), false);
+  assert.equal(cm.getValue(), "(aXbc IS 1) OR (aXbc IS 2)");
+});
+
+test("an edit outside the place copies what was typed; undo drops the copy", async () => {
+  const page = loadMain();
+  const outside = fakeCodeMirror("a + a + 1");
+  outside.cm.select(0, 1);
+  page.press(outside.input, { altKey: true });
+  outside.cm.type("b");
+  outside.cm.replaceRange("9", outside.cm.posFromIndex(7), outside.cm.posFromIndex(8), "+input");
+  await tick();
+  assert.equal(page.main.isPending(outside.cm), false);
+  assert.equal(outside.cm.getValue(), "b + b + 9");
+
+  const undone = fakeCodeMirror("a + a");
+  undone.cm.select(0, 1);
+  page.press(undone.input, { altKey: true });
+  undone.cm.type("b");
+  undone.cm.replaceRange("", undone.cm.posFromIndex(0), undone.cm.posFromIndex(1), "undo");
+  assert.equal(page.main.isPending(undone.cm), false);
+  assert.equal(undone.cm.getValue(), " + ", "nothing copied");
+  assert.equal(pendingMarkers(undone.cm).length, 0);
+});
+
+test("leaving the editor (e.g. clicking Apply) copies the edit; a hint click that refocuses does not", async () => {
+  const page = loadMain();
+  const { cm, input } = fakeCodeMirror("a + a");
+  cm.select(0, 1);
+  page.press(input, { altKey: true });
+  cm.type("b");
+  cm.blur();
+  cm.focus(); // a click on a hint gives the focus back at once
+  await sleep(250);
+  assert.ok(page.main.isPending(cm));
+  cm.blur();
+  await sleep(250);
+  assert.equal(page.main.isPending(cm), false);
+  assert.equal(cm.getValue(), "b + b");
+});
+
+test("an operator hint that steps over the next space: the space is not doubled in the copies", () => {
   const page = loadMain();
   const { cm, input } = fakeCodeMirror("IF (m IS 12) OR (m IS 3)");
   cm.select(4, 5);
@@ -479,17 +565,10 @@ test("an operator hint that steps over the next space keeps linked editing going
   // Abacum: replace the typed word with " -", then move the cursor past the existing space.
   cm.replaceRange(" -", cm.posFromIndex(4), cm.posFromIndex(5), "complete");
   cm.setCursor(cm.posFromIndex(7));
-  assert.equal(cm.getValue(), "IF ( - IS 12) OR ( - IS 3)");
-  assert.ok(page.main.isLinked(cm), "still linked");
+  assert.ok(page.main.isPending(cm), "still pending");
   cm.type("5 ");
+  page.press(input, { key: "Enter" });
   assert.equal(cm.getValue(), "IF ( - 5 IS 12) OR ( - 5 IS 3)");
-
-  // Different text after the places: the cursor really left, linking ends.
-  const other = fakeCodeMirror("(m IS 1) + (m* 2)");
-  other.cm.select(1, 2);
-  page.press(other.input, { altKey: true });
-  other.cm.setCursor(other.cm.posFromIndex(2));
-  assert.equal(page.main.isLinked(other.cm), false);
 });
 
 test("Alt+Backspace replaces variable chips as a whole, on several lines", () => {
@@ -500,6 +579,7 @@ test("Alt+Backspace replaces variable chips as a whole, on several lines", () =>
   assert.equal(page.press(input, { altKey: true }).prevented, true);
   assert.equal(cm.getValue(), "IF  = 1\nTHEN  * 2\nELSE 0");
   cm.type("1");
+  page.press(input, { key: "Escape" });
   assert.equal(cm.getValue(), "IF 1 = 1\nTHEN 1 * 2\nELSE 0");
 });
 
@@ -532,59 +612,6 @@ test("Alt+Backspace is left alone without two matches, without a selection, or w
   assert.equal(off.press(twice.input, { altKey: true }).prevented, true, "applies without reload");
 });
 
-test("Esc ends linked editing and keeps the text; hints close first; then Abacum's Esc runs", () => {
-  const page = loadMain();
-  const { cm, input } = fakeCodeMirror("a + a");
-  cm.select(0, 1);
-  page.press(input, { altKey: true });
-  cm.type("b");
-
-  cm.state.completionActive = {};
-  assert.equal(page.press(input, { key: "Escape" }).prevented, false, "hints open: they close first");
-  delete cm.state.completionActive;
-
-  const esc = page.press(input, { key: "Escape" });
-  assert.ok(esc.prevented && esc.stopped, "the editor is not cancelled");
-  assert.equal(page.main.isLinked(cm), false);
-  assert.equal(cm.getValue(), "b + b");
-  assert.equal(linkedRegions(cm).length, 0);
-  assert.equal(cm.bookmarks.length, 0);
-  cm.type("c");
-  assert.equal(cm.getValue(), "bc + b", "no longer copied");
-  assert.equal(page.press(input, { key: "Escape" }).prevented, false, "Abacum cancels as usual");
-});
-
-test("linked editing ends on a cursor or an edit outside the place, and on undo", () => {
-  const page = loadMain();
-
-  const moved = fakeCodeMirror("a + a");
-  moved.cm.select(0, 1);
-  page.press(moved.input, { altKey: true });
-  moved.cm.setCursor(moved.cm.posFromIndex(3));
-  assert.equal(page.main.isLinked(moved.cm), false, "cursor left the place");
-
-  const outside = fakeCodeMirror("a + a + 1");
-  outside.cm.select(0, 1);
-  page.press(outside.input, { altKey: true });
-  outside.cm.replaceRange("9", outside.cm.posFromIndex(6), outside.cm.posFromIndex(7), "+input");
-  assert.equal(page.main.isLinked(outside.cm), false);
-  assert.equal(outside.cm.getValue(), " +  + 9", "the outside edit is not copied");
-
-  const forward = fakeCodeMirror("a + a");
-  forward.cm.select(0, 1);
-  page.press(forward.input, { altKey: true });
-  forward.cm.replaceRange("", forward.cm.posFromIndex(0), forward.cm.posFromIndex(1), "+delete");
-  assert.equal(page.main.isLinked(forward.cm), false, "a delete reaching past the place");
-  assert.equal(forward.cm.getValue(), "+ ");
-
-  const undone = fakeCodeMirror("a + a");
-  undone.cm.select(0, 1);
-  page.press(undone.input, { altKey: true });
-  undone.cm.type("b");
-  undone.cm.replaceRange("", undone.cm.posFromIndex(0), undone.cm.posFromIndex(1), "undo");
-  assert.equal(page.main.isLinked(undone.cm), false);
-});
-
 test("a selection highlights the other matches (text by overlay, chips by widget class)", () => {
   const page = loadMain();
   const chip = "v{{Rev}}";
@@ -613,10 +640,10 @@ test("a selection highlights the other matches (text by overlay, chips by widget
 
   cm.select(11, 12);
   page.press(input, { altKey: true });
-  assert.equal(cm.overlays.length, 0, "no highlight while linked");
+  assert.equal(cm.overlays.length, 0, "no highlight while a replace is pending");
 
   page.html.removeAttribute(MULTI_ATTR);
-  page.main.stopLinked(cm);
+  page.main.stopReplace(cm);
   cm.select(10, 11);
   assert.equal(cm.overlays.length, 0, "off: no highlight");
   assert.equal(page.head.nodes.length, 1, "style added once");

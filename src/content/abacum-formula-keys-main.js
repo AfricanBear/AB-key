@@ -10,19 +10,22 @@
 //      is; a variable chip is an atomic range, so it goes as a whole).
 //    - Cmd+Backspace (Mac) -> delWrappedLineLeft (to the start of the line).
 //
-// 2. Edit all matches (MULTI_EDIT_ATTR).
+// 2. Replace all matches (MULTI_EDIT_ATTR): "edit one place, apply everywhere".
 //    - With one non-empty selection, the same text elsewhere in the formula is highlighted
 //      (an overlay for plain text, a class on the widget for variable chips).
-//    - Alt+Backspace with at least two matches deletes every match and starts linked editing:
-//      one real cursor stays where the selection was, the other places show a ghost cursor, and
-//      every edit at the real cursor is copied to them. Abacum's hints only work with a single
-//      selection (show-hint refuses several), which is why this is not CodeMirror's native
-//      multi-cursor. A picked hint becomes a chip only at the real cursor (Abacum marks chips in
-//      its hint callback, not from text), so the chip marks are copied to the other places too.
-//    - The copies are made in the same CodeMirror operation as the edit ("change" handlers run
-//      before the operation ends), so one Ctrl+Z undoes the edit everywhere.
-//    - Linked editing ends on Esc (hints open: Esc closes them first), undo / redo, an edit or a
-//      cursor outside the edited place, or several selections.
+//    - Alt+Backspace with at least two matches deletes every match. The cursor stays where the
+//      selection was; the other places get an orange marker. You edit that one place as usual:
+//      hints, arrows and Ctrl+Backspace work, because Abacum only ever sees edits in one place
+//      (its hint parser breaks when the text changes in several places while typing).
+//    - The edited text is copied to every marked place, with Abacum's chip marks, in one
+//      CodeMirror operation (one undo step), when you:
+//        Enter (no hint list open)  - the Enter is ours; the next Enter applies the formula
+//        Esc (no hint list open)    - the Esc is ours; the next Esc cancels the editor
+//        move the cursor out of the edited place, or edit outside it
+//        leave the editor (click Apply / elsewhere)
+//    - Undo / redo before that drops the pending copy. Abacum inserts an operator hint as " -"
+//      and then steps over the next space: those spaces join the edited place (and every marked
+//      place is extended over the same spaces).
 //    - A match that cuts through a variable chip is skipped. With fewer than two matches
 //      Alt+Backspace is left alone (on Mac it keeps deleting the word / selection).
 //
@@ -40,10 +43,11 @@
   const EDITOR = '[data-testid="testid-codemirror"]';
   const MATCH_TOKEN = "ab-key-match"; // overlay token -> CSS class cm-ab-key-match
   const CHIP_MATCH_CLASS = "ab-key-match-chip";
-  const LINKED_CLASS = "ab-key-linked";
-  const GHOST_CLASS = "ab-key-ghost-cursor";
-  const MIRROR_ORIGIN = "+ab-key-mirror";
+  const EDITED_CLASS = "ab-key-edited";
+  const PENDING_CLASS = "ab-key-pending";
+  const APPLY_ORIGIN = "+ab-key-apply";
   const STYLE_ID = "ab-key-formula-match-style";
+  const BLUR_DELAY_MS = 150; // a click on a hint blurs the editor for a moment
 
   const isOn = (attr) => document.documentElement.getAttribute(attr) === "on";
 
@@ -55,11 +59,9 @@
     return null;
   }
 
+  const noModifiers = (event) => !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.isComposing;
   const isAltBackspace = (event) =>
     event.key === "Backspace" && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.isComposing;
-
-  const isPlainEscape = (event) =>
-    event.key === "Escape" && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.isComposing;
 
   /** The CodeMirror instance whose input received the event, if it is a formula editor. */
   function editorOf(target) {
@@ -70,6 +72,7 @@
   }
 
   const isReadOnly = (cm) => typeof cm.isReadOnly === "function" && cm.isReadOnly();
+  const hintsOpen = (cm) => Boolean(cm.state && cm.state.completionActive);
 
   /** Text worth matching: non-empty, one line, not only spaces. */
   const isUsableNeedle = (needle) => typeof needle === "string" && needle.trim() !== "" && !needle.includes("\n");
@@ -126,7 +129,7 @@
     return isUsableNeedle(needle) ? { needle, start, end } : null;
   }
 
-  /** Chips: atomic marks with a widget, as [start, end) offsets plus the mark. */
+  /** Chips: atomic marks with a range, as [start, end) offsets plus the mark. */
   function chipsOf(cm, from = 0, to = Infinity) {
     const chips = [];
     for (const mark of cm.getAllMarks()) {
@@ -160,27 +163,29 @@
     style.textContent =
       `.cm-${MATCH_TOKEN}{background:rgba(255,193,7,.35);border-radius:2px}` +
       `.${CHIP_MATCH_CLASS}{outline:2px solid rgba(255,160,0,.85);outline-offset:1px;border-radius:4px}` +
-      `.${LINKED_CLASS}{background:rgba(255,193,7,.22);border-radius:2px}` +
-      `.${GHOST_CLASS}{display:inline-block;width:0;height:1.1em;vertical-align:text-bottom;` +
-      `border-left:2px solid rgba(255,140,0,.95);margin-right:-2px;` +
-      `animation:ab-key-ghost-blink 1.06s steps(1) infinite}` +
-      `@keyframes ab-key-ghost-blink{50%{opacity:0}}`;
+      `.${EDITED_CLASS}{background:rgba(255,193,7,.22);border-radius:2px}` +
+      `.${PENDING_CLASS}{display:inline-block;width:6px;height:1.1em;vertical-align:text-bottom;` +
+      `margin:0 1px;border:1px dashed rgba(255,140,0,.95);border-radius:2px;background:rgba(255,193,7,.25)}`;
     document.head.appendChild(style);
   }
 
-  // --- Linked editing ----------------------------------------------------------------------
+  // --- Edit one place, apply everywhere ------------------------------------------------------
 
-  const sessions = new WeakMap(); // cm -> linked editing session
+  const sessions = new WeakMap(); // cm -> pending replace session
 
-  const LINKED_MARK = { inclusiveLeft: true, inclusiveRight: true, clearWhenEmpty: false, className: LINKED_CLASS };
+  const EDITED_MARK = { inclusiveLeft: true, inclusiveRight: true, clearWhenEmpty: false, className: EDITED_CLASS };
 
   function rangeOf(cm, marker) {
-    const found = marker.find();
-    if (!found || !found.from) return null;
-    return { from: cm.indexFromPos(found.from), to: cm.indexFromPos(found.to) };
+    const found = marker && marker.find();
+    if (!found) return null;
+    const from = found.from || found; // a bookmark's find() is a position
+    const to = found.to || found;
+    if (typeof from.line !== "number") return null;
+    return { from: cm.indexFromPos(from), to: cm.indexFromPos(to) };
   }
 
-  function stopLinked(cm) {
+  /** Ends the session without touching the text (markers and listeners only). */
+  function stopReplace(cm) {
     const session = sessions.get(cm);
     if (!session) return;
     sessions.delete(cm);
@@ -188,174 +193,143 @@
       cm.off("beforeChange", session.onBeforeChange);
       cm.off("change", session.onChange);
       cm.off("cursorActivity", session.onCursorActivity);
+      cm.off("blur", session.onBlur);
     }
-    for (const region of session.regions) {
-      region.marker.clear();
-      if (region.ghost) region.ghost.clear();
-      for (const chip of region.chips) chip.clear();
-    }
-  }
-
-  /** Ghost cursor at the end of each mirror region (they are not real selections). */
-  function placeGhosts(cm, session) {
-    if (typeof cm.setBookmark !== "function") return;
-    for (const region of session.regions) {
-      if (region === session.primary) continue;
-      if (region.ghost) region.ghost.clear();
-      region.ghost = null;
-      const range = rangeOf(cm, region.marker);
-      if (!range) continue;
-      const widget = document.createElement("span");
-      widget.className = GHOST_CLASS;
-      region.ghost = cm.setBookmark(cm.posFromIndex(range.to), { widget, insertLeft: true });
-    }
-  }
-
-  /** Copies the primary region's chips (Abacum's atomic widgets) into every mirror region. */
-  function syncChips(cm, session) {
-    if (sessions.get(cm) !== session) return;
-    const primary = rangeOf(cm, session.primary.marker);
-    if (!primary) return;
-    const chips = chipsOf(cm, primary.from, primary.to).filter((chip) => !session.ownChips.has(chip.mark));
-    for (const region of session.regions) {
-      if (region === session.primary) continue;
-      for (const chip of region.chips) {
-        session.ownChips.delete(chip);
-        chip.clear();
-      }
-      region.chips = [];
-      const range = rangeOf(cm, region.marker);
-      if (!range) continue;
-      for (const chip of chips) {
-        const from = range.from + (chip.start - primary.from);
-        const to = range.from + (chip.end - primary.from);
-        if (to > range.to) continue;
-        const original = chip.mark.replacedWith;
-        const mark = cm.markText(cm.posFromIndex(from), cm.posFromIndex(to), {
-          replacedWith: original && typeof original.cloneNode === "function" ? original.cloneNode(true) : undefined,
-          atomic: true,
-          handleMouseEvents: chip.mark.handleMouseEvents !== false
-        });
-        region.chips.push(mark);
-        session.ownChips.add(mark);
-      }
-    }
-  }
-
-  /** Makes every mirror region hold the primary region's text. Runs inside the edit's operation. */
-  function mirror(cm, session) {
-    const primary = rangeOf(cm, session.primary.marker);
-    if (!primary) {
-      stopLinked(cm);
-      return;
-    }
-    const value = cm.getValue();
-    const text = value.slice(primary.from, primary.to);
-    session.mirroring = true;
-    try {
-      for (const region of session.regions) {
-        if (region === session.primary) continue;
-        const range = rangeOf(cm, region.marker);
-        if (!range) continue;
-        if (cm.getValue().slice(range.from, range.to) === text) continue;
-        cm.replaceRange(text, cm.posFromIndex(range.from), cm.posFromIndex(range.to), MIRROR_ORIGIN);
-      }
-    } finally {
-      session.mirroring = false;
-    }
-    placeGhosts(cm, session);
-    // Abacum marks a picked hint as a chip after its own replaceRange returns, i.e. after this
-    // handler; copy chips once it has.
-    Promise.resolve().then(() => syncChips(cm, session));
+    if (session.blurTimer) clearTimeout(session.blurTimer);
+    session.edited.clear();
+    for (const place of session.places) place.clear();
   }
 
   /**
-   * Extends every region over the spaces that follow it, when each region is followed by exactly
-   * these spaces. Returns false (nothing changed) otherwise.
+   * Copies the edited text (with chip marks) into every marked place in one operation, then ends
+   * the session. A place already followed by the spaces the edited place absorbed gets them
+   * replaced, so they are not doubled.
    */
-  function extendOverSpaces(cm, session, gap) {
-    if (!/^[ \t]+$/.test(gap)) return false;
+  function applyReplace(cm) {
+    const session = sessions.get(cm);
+    if (!session) return false;
+    const edited = rangeOf(cm, session.edited);
     const value = cm.getValue();
-    const ranges = session.regions.map((region) => rangeOf(cm, region.marker));
-    if (ranges.some((range) => !range || value.slice(range.to, range.to + gap.length) !== gap)) return false;
-    session.regions.forEach((region, i) => {
-      region.marker.clear();
-      region.marker = cm.markText(
-        cm.posFromIndex(ranges[i].from),
-        cm.posFromIndex(ranges[i].to + gap.length),
-        LINKED_MARK
-      );
-    });
-    placeGhosts(cm, session);
+    const targets = session.places.map((place) => rangeOf(cm, place)).filter(Boolean);
+    stopReplace(cm);
+    if (!edited) return false;
+    const text = value.slice(edited.from, edited.to);
+    const chips = chipsOf(cm, edited.from, edited.to);
+    const absorbed = session.absorbed;
+    const run = () => {
+      // Right to left, so earlier offsets stay valid.
+      for (const at of targets.map((t) => t.from).sort((a, b) => b - a)) {
+        const current = cm.getValue();
+        const end = absorbed && current.slice(at, at + absorbed.length) === absorbed ? at + absorbed.length : at;
+        cm.replaceRange(text, cm.posFromIndex(at), cm.posFromIndex(end), APPLY_ORIGIN);
+        for (const chip of chips) {
+          const original = chip.mark.replacedWith;
+          cm.markText(cm.posFromIndex(at + chip.start - edited.from), cm.posFromIndex(at + chip.end - edited.from), {
+            replacedWith: original && typeof original.cloneNode === "function" ? original.cloneNode(true) : undefined,
+            atomic: true,
+            handleMouseEvents: chip.mark.handleMouseEvents !== false
+          });
+        }
+      }
+    };
+    if (typeof cm.operation === "function") cm.operation(run);
+    else run();
     return true;
   }
 
-  /** Starts linked editing at the cursor offsets; the cursor at primaryIndex stays real. */
-  function startLinked(cm, cursors, primaryIndex) {
-    stopLinked(cm);
+  /** The edited place absorbs the spaces the cursor stepped over (see the header). */
+  function absorbSpaces(cm, session, gap) {
+    if (!/^[ \t]+$/.test(gap)) return false;
+    const edited = rangeOf(cm, session.edited);
+    if (!edited) return false;
+    session.edited.clear();
+    session.edited = cm.markText(cm.posFromIndex(edited.from), cm.posFromIndex(edited.to + gap.length), EDITED_MARK);
+    session.absorbed += gap;
+    return true;
+  }
+
+  /** Starts a session: the cursor at primaryIndex is the edited place, the rest get markers. */
+  function startReplace(cm, cursors, primaryIndex) {
+    stopReplace(cm);
     ensureStyle();
-    const session = { regions: [], primary: null, mirroring: false, ownChips: new Set() };
+    const primaryOffset = cursors[primaryIndex] ?? cursors[0];
+    const primaryPos = cm.posFromIndex(primaryOffset);
+    const session = {
+      edited: cm.markText(primaryPos, primaryPos, EDITED_MARK),
+      places: [],
+      absorbed: "",
+      ended: null,
+      blurTimer: null
+    };
     for (const offset of cursors) {
-      const pos = cm.posFromIndex(offset);
-      session.regions.push({ marker: cm.markText(pos, pos, LINKED_MARK), ghost: null, chips: [] });
+      if (offset === primaryOffset) continue;
+      const widget = document.createElement("span");
+      widget.className = PENDING_CLASS;
+      widget.title = "AB-key: the edit is copied here (Enter / Esc / leave this place)";
+      session.places.push(cm.setBookmark(cm.posFromIndex(offset), { widget }));
     }
-    session.primary = session.regions[primaryIndex] || session.regions[0];
+
+    const insideEdited = (from, to) => {
+      const edited = rangeOf(cm, session.edited);
+      return Boolean(edited) && from >= edited.from && to <= edited.to;
+    };
 
     session.onBeforeChange = (_cm, change) => {
-      if (session.mirroring) return;
-      if (change.origin === "undo" || change.origin === "redo" || change.origin === "setValue") return;
-      const primary = rangeOf(cm, session.primary.marker);
-      const from = cm.indexFromPos(change.from);
-      const to = cm.indexFromPos(change.to);
-      // An edit reaching outside the linked place ends linked editing; the edit itself goes ahead.
-      if (!primary || from < primary.from || to > primary.to) session.outside = true;
-    };
-    session.onChange = (_cm, change) => {
-      if (session.mirroring || sessions.get(cm) !== session) return;
-      const ends = change.origin === "undo" || change.origin === "redo" || change.origin === "setValue";
-      if (ends || session.outside) {
-        stopLinked(cm);
-        return;
+      if (session.ended) return;
+      if (change.origin === "undo" || change.origin === "redo" || change.origin === "setValue") {
+        session.ended = "drop";
+      } else if (!insideEdited(cm.indexFromPos(change.from), cm.indexFromPos(change.to))) {
+        session.ended = "apply";
       }
-      mirror(cm, session);
+    };
+    session.onChange = () => {
+      if (sessions.get(cm) !== session || !session.ended) return;
+      if (session.ended === "drop") stopReplace(cm);
+      // An edit outside the place: copy what was typed so far once this edit's operation is done.
+      else Promise.resolve().then(() => applyReplace(cm));
     };
     session.onCursorActivity = () => {
-      if (session.mirroring || sessions.get(cm) !== session) return;
+      if (sessions.get(cm) !== session || session.ended) return;
       const ranges = cm.listSelections();
-      // Abacum inserts an operator hint as " -" and then steps over the space that follows:
-      // spaces between the place and the cursor join the place (and every copy).
       if (ranges.length === 1) {
         const head = cm.indexFromPos(ranges[0].head);
-        const current = rangeOf(cm, session.primary.marker);
-        if (current && head > current.to && head === cm.indexFromPos(ranges[0].anchor)) {
-          extendOverSpaces(cm, session, cm.getValue().slice(current.to, head));
+        const edited = rangeOf(cm, session.edited);
+        if (edited && head > edited.to && head === cm.indexFromPos(ranges[0].anchor)) {
+          absorbSpaces(cm, session, cm.getValue().slice(edited.to, head));
         }
       }
-      const primary = rangeOf(cm, session.primary.marker);
-      const inside = (pos) => {
-        const at = cm.indexFromPos(pos);
-        return primary && at >= primary.from && at <= primary.to;
-      };
-      if (ranges.length !== 1 || !inside(ranges[0].head) || !inside(ranges[0].anchor)) stopLinked(cm);
+      const inside = ranges.length === 1 && insideEdited(
+        Math.min(cm.indexFromPos(ranges[0].anchor), cm.indexFromPos(ranges[0].head)),
+        Math.max(cm.indexFromPos(ranges[0].anchor), cm.indexFromPos(ranges[0].head))
+      );
+      if (!inside) applyReplace(cm);
+    };
+    session.onBlur = () => {
+      if (session.blurTimer) clearTimeout(session.blurTimer);
+      session.blurTimer = setTimeout(() => {
+        session.blurTimer = null;
+        if (sessions.get(cm) !== session) return;
+        if (typeof cm.hasFocus === "function" && cm.hasFocus()) return;
+        applyReplace(cm);
+      }, BLUR_DELAY_MS);
     };
 
     sessions.set(cm, session);
-    cm.setCursor(cm.posFromIndex(cursors[primaryIndex] ?? cursors[0]));
+    cm.setCursor(primaryPos);
     cm.on("beforeChange", session.onBeforeChange);
     cm.on("change", session.onChange);
     cm.on("cursorActivity", session.onCursorActivity);
-    placeGhosts(cm, session);
+    cm.on("blur", session.onBlur);
     return session;
   }
 
-  /** Alt+Backspace: delete every match and link the places. Returns true when it acted. */
+  /** Alt+Backspace: delete every match and start a session. Returns true when it acted. */
   function deleteAllMatches(cm) {
     const found = matchesOf(cm);
     if (!found || found.matches.length < 2) return false;
     const { matches, selection } = found;
     const selected = Math.max(0, matches.findIndex(([start]) => start === selection.start));
     const cursors = cursorsAfterDelete(matches);
-    // Index of the selected match among the merged cursors.
     const primaryOffset = cursorsAfterDelete(matches.slice(0, selected + 1)).pop();
     const primaryIndex = Math.max(0, cursors.indexOf(primaryOffset));
     const run = () => {
@@ -364,7 +338,7 @@
         const [start, end] = matches[i];
         cm.replaceRange("", cm.posFromIndex(start), cm.posFromIndex(end), "+delete");
       }
-      startLinked(cm, cursors, primaryIndex);
+      startReplace(cm, cursors, primaryIndex);
     };
     if (typeof cm.operation === "function") cm.operation(run);
     else run();
@@ -446,11 +420,17 @@
       }
     }
 
-    if (isPlainEscape(event) && sessions.has(cm)) {
-      // Hints open: let Esc close them first; the next Esc ends linked editing.
-      if (cm.state && cm.state.completionActive) return;
+    // While a replace is pending, Enter and Esc copy the edit instead of applying / cancelling
+    // the formula. With the hint list open they belong to the hints (pick / close).
+    if (sessions.has(cm) && (event.key === "Enter" || event.key === "Escape") && noModifiers(event)) {
+      if (hintsOpen(cm)) return;
       consume(event);
-      stopLinked(cm);
+      applyReplace(cm);
+      return;
+    }
+    // Abacum's other Enter bindings (Ctrl/Cmd/Shift+Enter) still run, after the copy.
+    if (sessions.has(cm) && event.key === "Enter" && !hintsOpen(cm)) {
+      applyReplace(cm);
       return;
     }
 
@@ -476,8 +456,9 @@
     findMatches,
     cursorsAfterDelete,
     deleteAllMatches,
-    stopLinked,
-    isLinked: (cm) => sessions.has(cm),
+    applyReplace,
+    stopReplace,
+    isPending: (cm) => sessions.has(cm),
     updateHighlight,
     WORD_DELETE_ATTR,
     MULTI_EDIT_ATTR

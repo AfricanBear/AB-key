@@ -2,7 +2,7 @@
 
 Planned features not yet shipped. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what is already released.
 
-No feature is planned right now (edit all matches in a formula with Alt+Backspace shipped in v1.3.0).
+No feature is planned right now (replace all matches in a formula with Alt+Backspace shipped in v1.3.0).
 
 ---
 

@@ -112,7 +112,7 @@ Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
 
 Shipped in v0.9.0: **formula hints beside the Cell Editor** (`src/content/abacum-formula-hints.js`).
 Shipped in v1.2.0: **Ctrl+Backspace deletes one word in formulas** (`src/content/abacum-formula-keys.js` + `abacum-formula-keys-main.js`).
-Shipped in v1.3.0: **edit all matches in a formula** (Alt+Backspace; same two scripts).
+Shipped in v1.3.0: **replace all matches in a formula** (Alt+Backspace, edit once, Enter copies; same two scripts).
 
 ## Recommended Next Commit Targets
 
