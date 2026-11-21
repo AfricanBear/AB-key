@@ -21,8 +21,10 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `sidebar-nav.js` — left navigation links after Library by position (`globalThis.AbKeySidebarNav`).
   - `ab-key-panel-host.js` — in-page A+B key panel (iframe of `src/popup/popup.html`).
   - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints,
-    dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`, the
-    only `"world": "MAIN"` script: no `chrome.*` there, talk via `CustomEvent` with JSON detail).
+    dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`),
+    formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`). `*-main.js` run
+    in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
+    attribute on `<html>`.
 - `src/shared/config-schema.js` — defaults + migrations (schema v7). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
@@ -47,7 +49,9 @@ Abacum releases.
 - Formula Cell Editor: `.ag-popup-editor[role=dialog]` (no `aria-label`) with
   `[data-testid="testid-codemirror"]` (CodeMirror 5). Hints `ul.CodeMirror-hints#cm-complete-N`
   live in `<body>` and are **re-created on every keystroke** (inline `left/top`); CodeMirror
-  rewrites that style on editor scroll.
+  rewrites that style on editor scroll. The instance is `.CodeMirror`'s `CodeMirror` property
+  (page world only); Abacum's `extraKeys` map Ctrl/Cmd-Backspace to `setValue("")`, Esc to
+  cancel; variable chips are atomic marks. Esc first closes open hints, a second Esc cancels.
 - Left nav: `button[data-testid="sidebar-section-button-<Name>"]` inside `a[href="/app/..."]`.
   After Library: Spaces, Models, Versions, Dimensions, Datasets, Integrations, More (More is a
   menu wrapped in a link to the current page; so is Search). The current section has no stable
