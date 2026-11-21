@@ -94,6 +94,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.3.0
+
+- **Replace all matches in a formula** (Options → Features, on by default). Select part of a formula and the same text elsewhere in it is highlighted (variable chips get an outline). **Alt+Backspace** deletes every match: the cursor stays where your selection was and the other places get a dashed orange marker. Edit that one place as usual — hints, arrows and Ctrl+Backspace work — then press **Enter** (or Esc, or move the cursor out of the place, or leave the editor): the edit is copied to every marked place, picked variables as chips. That Enter / Esc does not apply / cancel the formula; the next one does. Ctrl+Z undoes the copy in one step. A match that cuts through a variable chip is skipped; with fewer than two matches Alt+Backspace keeps its usual behaviour.
+  - Why not typing in all places at once: Abacum's hint parser expects edits in one place, and its hints refuse several cursors. The copy is one CodeMirror operation; the chip marks Abacum adds when a hint is picked are copied with it.
+
 ### v1.2.0
 
 - **Ctrl+Backspace deletes one word in formulas** (Options → Features, on by default). Abacum binds Ctrl+Backspace (and Cmd+Backspace) in the formula editor to clearing the whole formula; now it deletes the word left of the cursor, like any text field. A variable chip is deleted as a whole, a selection is deleted as is. On Mac, Cmd+Backspace deletes to the start of the line. Ctrl+Delete (next word) already worked and is unchanged.
