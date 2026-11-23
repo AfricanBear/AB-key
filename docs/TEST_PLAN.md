@@ -99,8 +99,13 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Focused row: creates "<name> (1)". Delete it afterwards (row menu → Delete variable) and press Save.
   - Ticked rows: uses the bulk "Duplicate (n)" button instead of the row menu.
   - No focused or ticked row: nothing happens.
+- Alt+X (models) — use a test model and do not press Save:
+  - Focused row of a variable no formula uses: the row disappears, Save becomes active; reload the page to get it back.
+  - Focused row of a variable other formulas use: Abacum shows a red toast naming them; nothing is deleted.
+  - Ticked rows: uses the bulk "Delete (n)" button instead of the row menu.
+  - No focused or ticked row, or not on a model page: nothing happens.
 - Esc in Edit Dimensions (Dimensions panel → edit): Abacum closes the dialog itself; unapplied changes are discarded without a prompt (Abacum behaviour, not AB-key).
-- Model-only hotkeys (Alt+E, Alt+A, Alt+R, Alt+C):
+- Model-only hotkeys (Alt+E, Alt+A, Alt+R, Alt+C, Alt+X):
   - On `/app/modules*`: listed in the A+B key panel and working.
   - On Datasets, Dimensions, Versions: not listed in the panel; pressing them does nothing.
   - Alt+S and Alt+1–5 remain listed and working on all Abacum pages.

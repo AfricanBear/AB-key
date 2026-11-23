@@ -25,7 +25,7 @@ answer in Russian; code, commits, PRs and repo docs are in English.
     formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`). `*-main.js` run
     in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
     attribute on `<html>`.
-- `src/shared/config-schema.js` — defaults + migrations (schema v7). Changing defaults of a shipped
+- `src/shared/config-schema.js` — defaults + migrations (schema v8). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
 - `src/options/`, `src/popup/` — options page and hotkey panel (ES modules, fine there).
@@ -36,7 +36,8 @@ answer in Russian; code, commits, PRs and repo docs are in English.
 Prefer `data-testid` and AG Grid / MUI base classes; hashed `css-xxxx` classes change between
 Abacum releases.
 
-- Right toolbar: `button[data-testid^="toolbar-rail-button-"]`, top to bottom; skip `ai-agent`.
+- Right toolbar: `button[data-testid^="toolbar-rail-button-"]`, top to bottom; skip `ai-agent`
+  (models: `toolbar-rail-button-module-info|settings|dimensions|activity`).
   Models: Info, Settings, Dimensions, Activity. Datasets: Info, Scheduler, Transform, Data usage,
   Activity. Dimensions: Info, Activity. Versions list: Activity.
 - Tooltips: MUI `.MuiTooltip-popper[role=tooltip] > .MuiTooltip-tooltip`, no aria link to the button.
@@ -71,7 +72,11 @@ Abacum releases.
   `[data-testid="mb-contextual-menu"] [role=menuitem]` (Rename / Duplicate / Delete variable …).
   Focused row: `.ag-row.variable-row.ag-row-focus` (in every column container). Ticked rows show
   `model-builder-bulk-actions-toolbar` (buttons by `aria-label`, e.g. `duplicate-variables`).
-  **Duplicate is saved immediately; Delete waits for Save.**
+  **Duplicate is saved immediately; Delete waits for Save.** Abacum refuses to delete a variable
+  other formulas use (red toast naming them, no dialog); bulk Delete is `aria-label="delete-variables"`.
+- Variable Info (focused row + Info drawer, `data-testid="toolbar-drawer"`): Description with
+  `Edit description` → textarea, `ai-generate-description-button`, Cancel / Save. Grid row data
+  (page-world api) has `description`, `description_ai_generated`, `dimensions` (names).
 - Edit Dimensions (`testid-builder-bulk-dimensions`) exists only with the right **Dimensions**
   panel open. Its dialog closes with Esc natively (unapplied changes are lost);
   Cancel `testid-dbv-modal-cancel`, Apply `testid-dbv-modal-accept` (disabled while unchanged).

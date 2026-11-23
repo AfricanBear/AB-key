@@ -112,6 +112,7 @@ Planned work is tracked in [`docs/ROADMAP.md`](ROADMAP.md).
 
 Shipped in v0.9.0: **formula hints beside the Cell Editor** (`src/content/abacum-formula-hints.js`).
 Shipped in v1.2.0: **Ctrl+Backspace deletes one word in formulas** (`src/content/abacum-formula-keys.js` + `abacum-formula-keys-main.js`).
+Shipped in v1.4.0: **Alt+X deletes the focused / ticked variables** (config schema v8, `action.deleteVariable`).
 
 ## Recommended Next Commit Targets
 

@@ -182,3 +182,37 @@ test("Alt+C does nothing when no variable is focused or ticked", async () => {
   page.dom["*"] = [page.element("Duplicate variable")];
   assert.deepEqual(await pressKey(page, "KeyC", { wait: 2300 }), []);
 });
+
+// --- v8: Alt+X deletes the variable --------------------------------------------------------
+
+const BULK_DELETE = "[data-testid='model-builder-bulk-actions-toolbar'] button[aria-label='delete-variables']";
+
+test("Alt+X deletes the focused variable through its row menu", async () => {
+  const page = createPage();
+  const items = ROW_MENU.map((name) => page.element(name, { role: "menuitem" }));
+  Object.assign(page.dom, { [FOCUSED_NAME]: [page.element("Revenue")], [ROW_MENU_ITEMS]: items });
+  assert.deepEqual(await pressKey(page, "KeyX"), ["contextmenu:Revenue", "Delete variable"]);
+});
+
+test("Alt+X uses the bulk Delete button when rows are ticked", async () => {
+  const page = createPage();
+  const items = ROW_MENU.map((name) => page.element(name, { role: "menuitem" }));
+  Object.assign(page.dom, {
+    [BULK_DELETE]: [page.element("Delete (2)")],
+    [BULK_DUPLICATE]: [page.element("Duplicate (2)")],
+    [FOCUSED_NAME]: [page.element("Revenue")],
+    [ROW_MENU_ITEMS]: items
+  });
+  assert.deepEqual(await pressKey(page, "KeyX"), ["Delete (2)"], "no row menu opened, not Duplicate");
+});
+
+test("Alt+X does nothing when no variable is focused or ticked, or outside model pages", async () => {
+  const page = createPage();
+  page.dom["*"] = [page.element("Delete variable")];
+  assert.deepEqual(await pressKey(page, "KeyX", { wait: 2300 }), []);
+
+  const elsewhere = createPage({ pathname: "/app/spaces/1" });
+  const items = ROW_MENU.map((name) => elsewhere.element(name, { role: "menuitem" }));
+  Object.assign(elsewhere.dom, { [FOCUSED_NAME]: [elsewhere.element("Revenue")], [ROW_MENU_ITEMS]: items });
+  assert.deepEqual(await pressKey(elsewhere, "KeyX", { wait: 600 }), []);
+});
