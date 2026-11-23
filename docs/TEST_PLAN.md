@@ -15,9 +15,8 @@ When changing the config schema, add a migration test to `tests/config-migration
 
 ## Integration Tests
 
-- Command dispatch from service worker reaches active tab content script.
-- Content script returns structured success and error payloads.
-- Config updates in options page persist and are used by command execution.
+- Config saved on the options page reaches open Abacum tabs without reload (`storage.onChanged`).
+- Extension update migrates the stored config and removes the old `mv3ClickAutomation.logs` key.
 
 ## End-to-End Manual Scenarios
 
@@ -135,6 +134,14 @@ When changing the config schema, add a migration test to `tests/config-migration
   - With the variable's dimensions button visible: opens the dimensions modal (`module-builder-dbv-modal`).
   - Without that button on the page (or while the modal is open): nothing is clicked — in particular not "Show Builder Formulas".
 - Extension reload / update keeps the saved configuration (not reset to defaults).
+- Options → Advanced → Configuration (JSON is what Save stores):
+  - Collapsed on first open; open it, reload Options: still open; close it, reload: closed. A failed Save opens it.
+  - Switching a toggle changes its flag in the JSON at once; Save marks one change, not two.
+  - Typing a flag in the JSON (e.g. `"diagnosticsEnabled": true`) moves its toggle; half-typed JSON leaves toggles alone, and clicking a toggle then shows "Fix the JSON below first".
+  - Export, flip a few toggles, Import the file: toggles show the file's flags; Save keeps them.
+  - Import a non-config file: red error, nothing saved.
+  - Save with a hotkey bound to a missing action, a disabled action, a key without Alt/Ctrl/Meta, or a key used twice on the same pages: saved, with a yellow warning per hotkey; shipped defaults save with no warning.
+  - Diagnostics on: with the console at **Verbose**, a hotkey logs `[AB-key]` lines and outlines the clicked element in pink.
 
 ## Performance Gates
 

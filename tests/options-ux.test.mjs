@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { diffForm } from "../src/options/dirty-state.js";
+import { flagsFromText, parseConfigText, setFlagInText } from "../src/options/config-form.js";
+import { createDefaultConfig } from "../src/shared/config-schema.js";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -82,4 +84,103 @@ test("Options wires dirty highlighting to rows, the JSON field and Save", () => 
   assert.match(css, /\.toggle-row\.is-dirty \{/);
   assert.match(css, /textarea\.is-dirty[ ,]/);
   assert.match(css, /\.btn-primary\.has-changes \{/);
+});
+
+// --- JSON is the source of truth; toggles show its flags ----------------------------------
+
+const FLAGS = ["diagnosticsEnabled", "lightThemeNavEnabled", "datasetPinColumnsEnabled"];
+const defaultsText = () => JSON.stringify(createDefaultConfig(), null, 2);
+
+test("flagsFromText reads flags from JSON (missing ones get defaults)", () => {
+  const config = createDefaultConfig();
+  config.diagnosticsEnabled = true;
+  config.datasetPinColumnsEnabled = false;
+  delete config.lightThemeNavEnabled;
+  assert.deepEqual(flagsFromText(JSON.stringify(config), FLAGS), {
+    diagnosticsEnabled: true,
+    lightThemeNavEnabled: false,
+    datasetPinColumnsEnabled: false
+  });
+});
+
+test("flagsFromText: half-typed JSON or a non-config gives null", () => {
+  assert.equal(flagsFromText('{"actions": [', FLAGS), null);
+  assert.equal(flagsFromText("[1, 2]", FLAGS), null);
+  assert.equal(flagsFromText('{"configVersion": 10, "actions": 5}', FLAGS), null);
+  assert.equal(parseConfigText("null"), null);
+});
+
+test("setFlagInText changes only that flag; null for broken JSON", () => {
+  const next = setFlagInText(defaultsText(), "diagnosticsEnabled", true);
+  const expected = createDefaultConfig();
+  expected.diagnosticsEnabled = true;
+  assert.deepEqual(JSON.parse(next), expected);
+  assert.equal(setFlagInText("{", "diagnosticsEnabled", true), null);
+});
+
+test("Save stores the JSON as is: toggles no longer overwrite imported or typed flags", () => {
+  const js = read("src/options/options.js");
+  const save = js.match(/async function saveConfig\(\) \{[\s\S]*?\n\}/)[0];
+  assert.doesNotMatch(save, /\.checked/, "Save does not read the checkboxes");
+  assert.doesNotMatch(save, /parsed\.\w+Enabled =/);
+  assert.match(save, /migrateConfig\(JSON\.parse\(configText\.value\)\)/);
+  assert.match(save, /lintConfig\(migrated\)/);
+  // Import and typing show the file's flags on the toggles; a toggle writes its flag into the JSON.
+  const imp = js.match(/function importConfig\(\) \{[\s\S]*?\n\}/)[0];
+  assert.match(imp, /showFlags\(text\)/);
+  assert.match(js, /configText\.addEventListener\("input", \(\) => \{\s*showFlags\(configText\.value\)/);
+  assert.match(js, /setFlagInText\(configText\.value, input\.id, input\.checked\)/);
+});
+
+test("diffForm: a toggle that also edits its flag in the JSON is one change, not two", () => {
+  const base = { toggles: { diagnosticsEnabled: false }, json: defaultsText() };
+  const current = { toggles: { diagnosticsEnabled: true }, json: setFlagInText(base.json, "diagnosticsEnabled", true) };
+  assert.deepEqual(diffForm(base, current), { toggles: ["diagnosticsEnabled"], json: false, count: 1 });
+  const hotkeyEdit = JSON.parse(current.json);
+  hotkeyEdit.hotkeys[0].key = "alt+9";
+  assert.equal(diffForm(base, { ...current, json: JSON.stringify(hotkeyEdit) }).count, 2);
+});
+
+test("Options explains the Verbose console level and the hotkey format", () => {
+  const html = read("src/options/options.html");
+  assert.match(html, /<b>Verbose<\/b>/);
+  assert.match(html, /<code>alt\+shift\+1<\/code>/);
+  assert.match(read("src/options/options.css"), /\.status\.is-warn \{/);
+});
+
+test("Configuration sits in Advanced as a native <details>, collapsed by default and remembered", () => {
+  const html = read("src/options/options.html");
+  const advanced = html.match(/<legend class="feature-group-title">Advanced<\/legend>([\s\S]*?)<\/fieldset>/)[1];
+  const details = advanced.match(/<details class="config-details" id="configDetails">[\s\S]*?<\/details>/);
+  assert.ok(details, "Configuration is a <details> inside Advanced");
+  assert.doesNotMatch(details[0].split("\n")[0], /\bopen\b/, "collapsed by default");
+  assert.match(details[0], /<summary class="config-summary">[\s\S]*Configuration/);
+  for (const id of ["configJson", "reloadBtn", "exportBtn", "importBtn"]) {
+    assert.match(details[0], new RegExp(`id="${id}"`), `${id} inside the section`);
+  }
+  assert.doesNotMatch(html, /card-config/, "the old separate card is gone");
+  assert.match(html, /<\/main>/);
+  assert.ok(html.indexOf('id="status"') > html.indexOf("</details>"), "status stays visible outside the section");
+
+  const js = read("src/options/options.js");
+  assert.match(js, /configDetails\.open = localStorage\.getItem\(CONFIG_OPEN_KEY\) === "1"/);
+  assert.match(js, /configDetails\.addEventListener\("toggle"[\s\S]*?localStorage\.setItem\(CONFIG_OPEN_KEY/);
+  const save = js.match(/async function saveConfig\(\) \{[\s\S]*?\n\}/)[0];
+  assert.match(save, /catch \(error\) \{\s*configDetails\.open = true;/, "a failed Save shows the JSON");
+
+  const css = read("src/options/options.css");
+  assert.match(css, /\.config-summary::-webkit-details-marker \{\s*display: none;/);
+  assert.match(css, /\.config-details\[open\] > \.config-summary::before \{\s*transform: rotate\(90deg\);/);
+});
+
+// --- No browser command left -------------------------------------------------------------
+
+test("manifest has no browser command; nothing sends EXECUTE_ACTION or stores logs", () => {
+  const manifest = JSON.parse(read("manifest.json"));
+  assert.equal(manifest.commands, undefined);
+  assert.equal(fs.existsSync(new URL("../src/background/hotkey-orchestrator.js", import.meta.url)), false);
+  for (const file of ["src/background/service-worker.js", "src/content/content-script.js", "src/shared/logger.js"]) {
+    assert.doesNotMatch(read(file), /EXECUTE_ACTION|chrome\.commands|appendLog/, file);
+  }
+  assert.match(read("src/background/service-worker.js"), /chrome\.storage\.local\.remove\(LEGACY_LOG_KEY\)/);
 });

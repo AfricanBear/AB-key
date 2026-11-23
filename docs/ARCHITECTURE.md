@@ -27,24 +27,26 @@ changes apply to open tabs without a reload.
 ### Background (`src/background/`)
 
 - `service-worker.js` — install / update (runs config migrations), toggles the panel on icon click
-  (injects the panel scripts if the tab has none yet), answers `GET_CONFIG`, and handles the
-  browser command `run_primary_action` (unbound by default) by sending `EXECUTE_ACTION` to the tab.
+  (injects the panel scripts if the tab has none yet). Hotkeys never go through it: the content
+  script handles `keydown` itself (the browser command was removed in v1.6.1).
 - `config-store.js` — read-through config cache with migration on read; dropped on
   `storage.onChanged`.
-- `hotkey-orchestrator.js` — browser command → action resolution and host gating.
 
 ### Shared (`src/shared/`)
 
 - `config-schema.js` — default config (actions, hotkeys, feature flags), versioned migrations
-  (schema v9), shape validation. Changing defaults of a shipped config needs a new migration that
-  replaces only shipped values and keeps user edits.
+  (schema v10), shape validation, and `lintConfig` (warnings for hotkeys that cannot fire). Changing
+  defaults of a shipped config needs a new migration that replaces only shipped values and keeps
+  user edits.
 - `errors.js` — error codes (`ElementNotFound`, `OverlayBlocked`, `TimeoutExceeded`, …).
-- `logger.js` — structured logs (`[MV3-AUTO]` prefix) when diagnostics are on.
+- `logger.js` — service worker console logs (`[AB-key]` prefix); nothing is stored. Hotkey
+  diagnostics are `console.debug` lines in the page console, also `[AB-key]`.
 
 ### UI
 
-- `src/options/` — options page: feature toggles, hotkeys and actions editor, import / export,
-  diagnostics logging.
+- `src/options/` — options page: feature toggles, the config JSON (hotkeys and actions), import /
+  export, diagnostics logging. The JSON is what Save stores; each toggle's id is a config flag and
+  mirrors it (`config-form.js`), and Save shows `lintConfig` warnings.
 - `src/popup/` — hotkeys for the current page, shown in the in-page panel.
 
 ## Hotkeys

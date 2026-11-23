@@ -183,7 +183,5 @@ test("manifest: page-world part in MAIN without chrome.*, settings part isolated
 
 test("options page has the toggle and saves it", () => {
   assert.match(read("src/options/options.html"), /id="formulaWordDeleteEnabled"/);
-  const js = read("src/options/options.js");
-  assert.match(js, /parsed\.formulaWordDeleteEnabled = formulaWordDeleteToggle\.checked/);
-  assert.match(js, /formulaWordDeleteToggle\.checked = config\.formulaWordDeleteEnabled !== false/);
+  // Toggle id = config flag; the generic wiring is tested in options-groups / options-ux.
 });

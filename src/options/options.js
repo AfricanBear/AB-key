@@ -1,23 +1,15 @@
-import { CONFIG_KEY, migrateConfig, validateConfigShape } from "../shared/config-schema.js";
+import { CONFIG_KEY, lintConfig, migrateConfig, validateConfigShape } from "../shared/config-schema.js";
+import { flagsFromText, setFlagInText } from "./config-form.js";
 import { diffForm } from "./dirty-state.js";
 
 const configText = document.getElementById("configJson");
 const statusEl = document.getElementById("status");
-const diagnosticsToggle = document.getElementById("diagnosticsEnabled");
-const abacumTabTitleToggle = document.getElementById("abacumTabTitleEnabled");
-const lightThemeNavToggle = document.getElementById("lightThemeNavEnabled");
-const darkerModelValuesToggle = document.getElementById("darkerModelValuesEnabled");
-const datasetSelectionSumToggle = document.getElementById("datasetSelectionSumEnabled");
-const datasetPinColumnsToggle = document.getElementById("datasetPinColumnsEnabled");
-const datasetTwoRowHeaderToggle = document.getElementById("datasetTwoRowHeaderEnabled");
-const formulaWordDeleteToggle = document.getElementById("formulaWordDeleteEnabled");
-const datasetTransformLinkToggle = document.getElementById("datasetTransformLinkEnabled");
-const unsavedVariableDeleteFixToggle = document.getElementById("unsavedVariableDeleteFixEnabled");
-const modelDimensionsToggle = document.getElementById("modelDimensionsEnabled");
 const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
 const saveBtn = document.getElementById("saveBtn");
+// Each feature toggle's id is the config flag it shows (e.g. "diagnosticsEnabled").
 const featureToggles = [...document.querySelectorAll('.feature-group input[type="checkbox"]')];
+const flagIds = featureToggles.map((input) => input.id);
 
 // --- Unsaved changes: compare the form with the last loaded/saved state ---
 let baseline = null;
@@ -44,8 +36,50 @@ function refreshDirty() {
   saveBtn.title = diff.count ? `${diff.count} unsaved change${diff.count === 1 ? "" : "s"}` : "";
 }
 
-for (const input of featureToggles) input.addEventListener("change", refreshDirty);
-configText.addEventListener("input", refreshDirty);
+// --- Toggles <-> JSON: the JSON is what Save stores; toggles are a view of its flags ---
+
+function showFlags(text) {
+  const flags = flagsFromText(text, flagIds);
+  if (!flags) return false;
+  for (const input of featureToggles) input.checked = flags[input.id];
+  return true;
+}
+
+for (const input of featureToggles) {
+  input.addEventListener("change", () => {
+    const next = setFlagInText(configText.value, input.id, input.checked);
+    if (next === null) {
+      input.checked = !input.checked;
+      configDetails.open = true;
+      setStatus("Fix the JSON below first: toggles write into it.", true);
+      return;
+    }
+    configText.value = next;
+    refreshDirty();
+  });
+}
+
+configText.addEventListener("input", () => {
+  showFlags(configText.value); // half-typed JSON leaves the toggles as they are
+  refreshDirty();
+});
+
+// --- Advanced → Configuration: collapsed by default, remembered in this browser ---
+const configDetails = document.getElementById("configDetails");
+const CONFIG_OPEN_KEY = "abKey.options.configOpen";
+
+try {
+  configDetails.open = localStorage.getItem(CONFIG_OPEN_KEY) === "1";
+} catch {
+  // Storage unavailable: stay collapsed.
+}
+configDetails.addEventListener("toggle", () => {
+  try {
+    localStorage.setItem(CONFIG_OPEN_KEY, configDetails.open ? "1" : "0");
+  } catch {
+    // Not remembered; nothing else depends on it.
+  }
+});
 
 // Closing or reloading the tab with unsaved changes shows the browser's "Leave site?" dialog.
 window.addEventListener("beforeunload", (event) => {
@@ -73,7 +107,7 @@ if (lightNavPreviewLight) {
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
-  statusEl.classList.remove("is-error", "is-info");
+  statusEl.classList.remove("is-error", "is-info", "is-warn");
   if (isError) {
     statusEl.classList.add("is-error");
   } else if (message.includes("imported") || message.includes("Review")) {
@@ -81,46 +115,34 @@ function setStatus(message, isError = false) {
   }
 }
 
+function setWarnings(message, warnings) {
+  statusEl.textContent = [message, ...warnings.map((warning) => `⚠ ${warning}`)].join("\n");
+  statusEl.classList.remove("is-error", "is-info");
+  statusEl.classList.add("is-warn");
+}
+
 async function loadConfig() {
   const raw = await chrome.storage.local.get(CONFIG_KEY);
   const config = migrateConfig(raw[CONFIG_KEY]);
-  diagnosticsToggle.checked = Boolean(config.diagnosticsEnabled);
-  abacumTabTitleToggle.checked = config.abacumTabTitleEnabled !== false;
-  lightThemeNavToggle.checked = Boolean(config.lightThemeNavEnabled);
-  darkerModelValuesToggle.checked = config.darkerModelValuesEnabled !== false;
-  datasetSelectionSumToggle.checked = config.datasetSelectionSumEnabled !== false;
-  datasetPinColumnsToggle.checked = config.datasetPinColumnsEnabled !== false;
-  datasetTwoRowHeaderToggle.checked = config.datasetTwoRowHeaderEnabled !== false;
-  formulaWordDeleteToggle.checked = config.formulaWordDeleteEnabled !== false;
-  datasetTransformLinkToggle.checked = config.datasetTransformLinkEnabled !== false;
-  unsavedVariableDeleteFixToggle.checked = config.unsavedVariableDeleteFixEnabled !== false;
-  modelDimensionsToggle.checked = config.modelDimensionsEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
+  showFlags(configText.value);
   takeBaseline();
   setStatus("Configuration loaded.");
 }
 
 async function saveConfig() {
   try {
-    const parsed = JSON.parse(configText.value);
-    parsed.diagnosticsEnabled = diagnosticsToggle.checked;
-    parsed.abacumTabTitleEnabled = abacumTabTitleToggle.checked;
-    parsed.lightThemeNavEnabled = lightThemeNavToggle.checked;
-    parsed.darkerModelValuesEnabled = darkerModelValuesToggle.checked;
-    parsed.datasetSelectionSumEnabled = datasetSelectionSumToggle.checked;
-    parsed.datasetPinColumnsEnabled = datasetPinColumnsToggle.checked;
-    parsed.datasetTwoRowHeaderEnabled = datasetTwoRowHeaderToggle.checked;
-    parsed.formulaWordDeleteEnabled = formulaWordDeleteToggle.checked;
-    parsed.datasetTransformLinkEnabled = datasetTransformLinkToggle.checked;
-    parsed.unsavedVariableDeleteFixEnabled = unsavedVariableDeleteFixToggle.checked;
-    parsed.modelDimensionsEnabled = modelDimensionsToggle.checked;
-    const migrated = migrateConfig(parsed);
+    const migrated = migrateConfig(JSON.parse(configText.value));
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });
     configText.value = JSON.stringify(migrated, null, 2);
+    showFlags(configText.value);
     takeBaseline();
-    setStatus("Configuration saved.");
+    const warnings = lintConfig(migrated);
+    if (warnings.length) setWarnings("Configuration saved, but some hotkeys will not work:", warnings);
+    else setStatus("Configuration saved.");
   } catch (error) {
+    configDetails.open = true; // the problem is in the JSON: show it
     setStatus(`Save failed: ${error.message}`, true);
   }
 }
@@ -143,8 +165,10 @@ function importConfig() {
     if (!file) return;
     const text = await file.text();
     configText.value = text;
+    const shown = showFlags(text);
     refreshDirty();
-    setStatus("Configuration imported. Review and click Save.");
+    if (shown) setStatus("Configuration imported. Toggles show its flags. Review and click Save.");
+    else setStatus("Imported file is not a valid configuration. Fix the JSON or click Reload.", true);
   });
   input.click();
 }
