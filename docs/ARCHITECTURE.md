@@ -29,6 +29,10 @@ changes apply to open tabs without a reload.
 - `service-worker.js` — install / update (runs config migrations), toggles the panel on icon click
   (injects the panel scripts if the tab has none yet). Hotkeys never go through it: the content
   script handles `keydown` itself (the browser command was removed in v1.6.1).
+- `detached-window.js` — "Pop out" (⧉ in the panel): opens `popup.html?detached=1` as a
+  `type: "popup"` window or focuses the open one (found with `runtime.getContexts`), at the last
+  saved position. The window (`src/popup/live-context.js`) follows the active tab and asks its
+  `ab-key-panel-host.js` for the context (`AB_KEY_PANEL_CONTEXT`: host, path, rail and nav labels).
 - `config-store.js` — read-through config cache with migration on read; dropped on
   `storage.onChanged`.
 

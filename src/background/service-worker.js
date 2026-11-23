@@ -1,5 +1,6 @@
 import { getConfig, resetConfig } from "./config-store.js";
 import { LogLevel, log } from "../shared/logger.js";
+import { DETACH_MESSAGE, openDetachedPanel } from "./detached-window.js";
 
 // Versions before 1.6.1 kept a log of up to 500 entries in storage that nothing read.
 const LEGACY_LOG_KEY = "mv3ClickAutomation.logs";
@@ -45,6 +46,18 @@ async function togglePanelOnTab(tab) {
     });
   }
 }
+
+// Pop out from the in-page panel (an iframe inside the Abacum tab, so sender.tab is that tab).
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type !== DETACH_MESSAGE) return false;
+  openDetachedPanel({ sourceTabId: sender.tab?.id, search: message.search })
+    .then((result) => sendResponse({ ok: true, ...result }))
+    .catch((error) => {
+      log(LogLevel.WARN, "Could not open the detached A+B key window", { message: error?.message });
+      sendResponse({ ok: false });
+    });
+  return true;
+});
 
 chrome.action.onClicked.addListener((tab) => {
   togglePanelOnTab(tab).catch(() => {

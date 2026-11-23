@@ -193,3 +193,30 @@ a.app-version:focus-visible {
   min-height: 6px;
   border-top: 1px solid rgba(186, 168, 230, 0.2);
 }
+
+.panel-header-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.panel-detach-btn {
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+/* Detached window: fills the window, no iframe rounding, no Pop out button. */
+html.is-detached,
+html.is-detached body {
+  width: 100%;
+  max-width: none;
+  overflow-y: auto;
+}
+
+html.is-detached .popup-shell {
+  border-radius: 0;
+}
+
+html.is-detached .panel-detach-btn {
+  display: none;
+}
