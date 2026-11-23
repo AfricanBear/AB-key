@@ -7,7 +7,7 @@ const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "
 
 for (const page of ["popup", "options"]) {
   test(`${page}: title has a version badge filled from manifest.json`, () => {
-    assert.match(read(`src/${page}/${page}.html`), /<h1>A\+B key <span id="appVersion" class="app-version"><\/span><\/h1>/);
+    assert.match(read(`src/${page}/${page}.html`), /<h1>A\+B key <a id="appVersion" class="app-version"[^>]*><\/a><\/h1>/);
     const script = read(`src/${page}/${page}.js`);
     assert.match(script, /getElementById\("appVersion"\)/);
     assert.match(script, /textContent = `v\$\{chrome\.runtime\.getManifest\(\)\.version\}`/);

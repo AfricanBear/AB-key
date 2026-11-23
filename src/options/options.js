@@ -1,4 +1,5 @@
 import { CONFIG_KEY, migrateConfig, validateConfigShape } from "../shared/config-schema.js";
+import { diffForm } from "./dirty-state.js";
 
 const configText = document.getElementById("configJson");
 const statusEl = document.getElementById("status");
@@ -14,6 +15,41 @@ const datasetTransformLinkToggle = document.getElementById("datasetTransformLink
 const unsavedVariableDeleteFixToggle = document.getElementById("unsavedVariableDeleteFixEnabled");
 const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
+const saveBtn = document.getElementById("saveBtn");
+const featureToggles = [...document.querySelectorAll('.feature-group input[type="checkbox"]')];
+
+// --- Unsaved changes: compare the form with the last loaded/saved state ---
+let baseline = null;
+
+function readForm() {
+  return {
+    toggles: Object.fromEntries(featureToggles.map((input) => [input.id, input.checked])),
+    json: configText.value
+  };
+}
+
+function takeBaseline() {
+  baseline = readForm();
+  refreshDirty();
+}
+
+function refreshDirty() {
+  const diff = diffForm(baseline, readForm());
+  for (const input of featureToggles) {
+    input.closest(".toggle-row")?.classList.toggle("is-dirty", diff.toggles.includes(input.id));
+  }
+  configText.classList.toggle("is-dirty", diff.json);
+  saveBtn.classList.toggle("has-changes", diff.count > 0);
+  saveBtn.title = diff.count ? `${diff.count} unsaved change${diff.count === 1 ? "" : "s"}` : "";
+}
+
+for (const input of featureToggles) input.addEventListener("change", refreshDirty);
+configText.addEventListener("input", refreshDirty);
+
+// Closing or reloading the tab with unsaved changes shows the browser's "Leave site?" dialog.
+window.addEventListener("beforeunload", (event) => {
+  if (diffForm(baseline, readForm()).count) event.preventDefault();
+});
 
 // Extension version from manifest.json, next to the title.
 const appVersion = document.getElementById("appVersion");
@@ -58,6 +94,7 @@ async function loadConfig() {
   datasetTransformLinkToggle.checked = config.datasetTransformLinkEnabled !== false;
   unsavedVariableDeleteFixToggle.checked = config.unsavedVariableDeleteFixEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
+  takeBaseline();
   setStatus("Configuration loaded.");
 }
 
@@ -78,6 +115,7 @@ async function saveConfig() {
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });
     configText.value = JSON.stringify(migrated, null, 2);
+    takeBaseline();
     setStatus("Configuration saved.");
   } catch (error) {
     setStatus(`Save failed: ${error.message}`, true);
@@ -102,6 +140,7 @@ function importConfig() {
     if (!file) return;
     const text = await file.text();
     configText.value = text;
+    refreshDirty();
     setStatus("Configuration imported. Review and click Save.");
   });
   input.click();
@@ -123,7 +162,7 @@ document.getElementById("resetDatasetColumnsBtn").addEventListener("click", () =
   resetDatasetColumns().catch((error) => setStatus(`Reset failed: ${error.message}`, true))
 );
 document.getElementById("reloadBtn").addEventListener("click", loadConfig);
-document.getElementById("saveBtn").addEventListener("click", saveConfig);
+saveBtn.addEventListener("click", saveConfig);
 document.getElementById("exportBtn").addEventListener("click", exportConfig);
 document.getElementById("importBtn").addEventListener("click", importConfig);
 

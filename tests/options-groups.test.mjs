@@ -1,0 +1,56 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const html = read("src/options/options.html");
+const optionsJs = read("src/options/options.js");
+
+const EXPECTED_GROUPS = {
+  Appearance: ["abacumTabTitleEnabled", "lightThemeNavEnabled", "darkerModelValuesEnabled"],
+  Models: ["formulaWordDeleteEnabled", "unsavedVariableDeleteFixEnabled"],
+  Datasets: [
+    "datasetSelectionSumEnabled",
+    "datasetPinColumnsEnabled",
+    "datasetTwoRowHeaderEnabled",
+    "datasetTransformLinkEnabled"
+  ],
+  Advanced: ["diagnosticsEnabled"]
+};
+
+const checkboxIds = (fragment) => [...fragment.matchAll(/<input type="checkbox" id="([^"]+)"/g)].map((m) => m[1]);
+
+function featureGroups() {
+  return [...html.matchAll(/<fieldset class="feature-group">([\s\S]*?)<\/fieldset>/g)].map((m) => {
+    const legend = m[1].match(/<legend class="feature-group-title">([^<]+)<\/legend>/);
+    return { title: legend ? legend[1].trim() : null, ids: checkboxIds(m[1]) };
+  });
+}
+
+test("Options groups the feature toggles by topic, in order", () => {
+  const groups = featureGroups();
+  assert.deepEqual(
+    groups.map((g) => g.title),
+    Object.keys(EXPECTED_GROUPS)
+  );
+  for (const group of groups) {
+    assert.deepEqual(group.ids, EXPECTED_GROUPS[group.title], `toggles in ${group.title}`);
+  }
+});
+
+test("Every feature toggle sits in exactly one group and none is lost", () => {
+  const grouped = featureGroups().flatMap((g) => g.ids);
+  const all = checkboxIds(html);
+  assert.deepEqual([...grouped].sort(), [...all].sort());
+  assert.equal(new Set(grouped).size, grouped.length);
+
+  // Every toggle options.js reads is still on the page.
+  const referenced = [...optionsJs.matchAll(/getElementById\("(\w+Enabled)"\)/g)].map((m) => m[1]);
+  assert.deepEqual([...referenced].sort(), [...all].sort());
+});
+
+test("Group titles are styled", () => {
+  const css = read("src/options/options.css");
+  assert.match(css, /\.feature-group \{/);
+  assert.match(css, /\.feature-group-title \{/);
+});
