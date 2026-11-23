@@ -8,7 +8,7 @@ const optionsJs = read("src/options/options.js");
 
 const EXPECTED_GROUPS = {
   Appearance: ["abacumTabTitleEnabled", "lightThemeNavEnabled", "darkerModelValuesEnabled"],
-  Models: ["formulaWordDeleteEnabled", "unsavedVariableDeleteFixEnabled"],
+  Models: ["formulaWordDeleteEnabled", "modelDimensionsEnabled", "unsavedVariableDeleteFixEnabled"],
   Datasets: [
     "datasetSelectionSumEnabled",
     "datasetPinColumnsEnabled",

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AB-key",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Hotkey-based click automation for complex and dynamic elements.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["*://*.abacum.io/*"],
@@ -61,6 +61,17 @@
     {
       "matches": ["*://*.abacum.io/*"],
       "js": ["src/content/abacum-formula-keys-main.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["*://*.abacum.io/*"],
+      "js": ["src/content/abacum-model-dimensions.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.abacum.io/*"],
+      "js": ["src/content/abacum-model-dimensions-main.js"],
       "run_at": "document_idle",
       "world": "MAIN"
     },

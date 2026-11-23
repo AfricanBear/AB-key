@@ -23,7 +23,8 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints,
     dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`),
     formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`), f chip → transformation
-    step (`abacum-dataset-transform-link.js`), model Save fix
+    step (`abacum-dataset-transform-link.js`), model dimensions chips
+    (`abacum-model-dimensions.js` + `abacum-model-dimensions-main.js`), model Save fix
     (`abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`). `*-main.js` run
     in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
     attribute on `<html>`.
@@ -83,6 +84,10 @@ Abacum releases.
   rejects every save (400 `CANNOT_DELETE_VARIABLE`) — fixed by `abacum-model-save-fix-main.js`.
   Creating or deleting rows sends nothing until Save. After any save test, reload and check: a 200
   with an empty `updated_fields` does not prove a deletion happened.
+- Builder view toggles: `button[aria-label="Show Builder Formulas|Values"]` (MUI IconButton,
+  `aria-pressed`) in one flex box with the timescale and `row-density-select`. Grid option
+  `rowHeight` is 32 (regular), no `getRowHeight`. Name cell: `[data-testid="drag-and-drop-cell"]`
+  fills the cell (flex row, name centred); the cell is `overflow:hidden`.
 - Variable Info (focused row + Info drawer, `data-testid="toolbar-drawer"`): Description with
   `Edit description` → textarea, `ai-generate-description-button`, Cancel / Save. AI generate
   replaces the text itself and closes the editor at once (no review step); the change waits for
