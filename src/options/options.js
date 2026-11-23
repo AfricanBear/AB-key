@@ -11,6 +11,7 @@ const datasetPinColumnsToggle = document.getElementById("datasetPinColumnsEnable
 const datasetTwoRowHeaderToggle = document.getElementById("datasetTwoRowHeaderEnabled");
 const formulaWordDeleteToggle = document.getElementById("formulaWordDeleteEnabled");
 const datasetTransformLinkToggle = document.getElementById("datasetTransformLinkEnabled");
+const unsavedVariableDeleteFixToggle = document.getElementById("unsavedVariableDeleteFixEnabled");
 const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
 
@@ -55,6 +56,7 @@ async function loadConfig() {
   datasetTwoRowHeaderToggle.checked = config.datasetTwoRowHeaderEnabled !== false;
   formulaWordDeleteToggle.checked = config.formulaWordDeleteEnabled !== false;
   datasetTransformLinkToggle.checked = config.datasetTransformLinkEnabled !== false;
+  unsavedVariableDeleteFixToggle.checked = config.unsavedVariableDeleteFixEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
   setStatus("Configuration loaded.");
 }
@@ -71,6 +73,7 @@ async function saveConfig() {
     parsed.datasetTwoRowHeaderEnabled = datasetTwoRowHeaderToggle.checked;
     parsed.formulaWordDeleteEnabled = formulaWordDeleteToggle.checked;
     parsed.datasetTransformLinkEnabled = datasetTransformLinkToggle.checked;
+    parsed.unsavedVariableDeleteFixEnabled = unsavedVariableDeleteFixToggle.checked;
     const migrated = migrateConfig(parsed);
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });

@@ -23,7 +23,8 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints,
     dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`),
     formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`), f chip → transformation
-    step (`abacum-dataset-transform-link.js`). `*-main.js` run
+    step (`abacum-dataset-transform-link.js`), model Save fix
+    (`abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`). `*-main.js` run
     in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
     attribute on `<html>`.
 - `src/shared/config-schema.js` — defaults + migrations (schema v8). Changing defaults of a shipped
@@ -75,6 +76,13 @@ Abacum releases.
   `model-builder-bulk-actions-toolbar` (buttons by `aria-label`, e.g. `duplicate-variables`).
   **Duplicate is saved immediately; Delete waits for Save.** Abacum refuses to delete a variable
   other formulas use (red toast naming them, no dialog); bulk Delete is `aria-label="delete-variables"`.
+- Model Save: `PUT /modelling/<model id>` (XHR) with the whole model plus `variables_created`,
+  `variables_edited`, `variables_deleted`, `variables_duplicated`. Saved variables are listed by
+  code (`T_MD_XXXX`); a new row has a temporary key like `0eqLj9i5oc-valid` until saved. Abacum bug:
+  deleting a never-saved row (menu or Alt+X) puts that key into `variables_deleted` and the backend
+  rejects every save (400 `CANNOT_DELETE_VARIABLE`) — fixed by `abacum-model-save-fix-main.js`.
+  Creating or deleting rows sends nothing until Save. After any save test, reload and check: a 200
+  with an empty `updated_fields` does not prove a deletion happened.
 - Variable Info (focused row + Info drawer, `data-testid="toolbar-drawer"`): Description with
   `Edit description` → textarea, `ai-generate-description-button`, Cancel / Save. Grid row data
   (page-world api) has `description`, `description_ai_generated`, `dimensions` (names).

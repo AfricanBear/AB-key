@@ -112,6 +112,10 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Focused row of a variable other formulas use: Abacum shows a red toast naming them; nothing is deleted.
   - Ticked rows: uses the bulk "Delete (n)" button instead of the row menu.
   - No focused or ticked row, or not on a model page: nothing happens.
+- Save after deleting a new unnamed variable (Options → Features, on by default; Models, use a test model):
+  - "+" on a group → Create variable, do not type a name, delete the row (right-click → Delete variable, or Alt+X); Abacum's "variable without a name" toast is expected. Create another variable with a name, Save: "Successfully updated the model"; after reload the named variable is there.
+  - Delete a saved variable, Save, **reload**: the variable is gone (a real deletion is not dropped).
+  - Off: the first scenario fails on Save with "Variable marked for deletion does not exist or could not be found" (Abacum's behaviour); switching applies to open tabs without reload.
 - Esc in Edit Dimensions (Dimensions panel → edit): Abacum closes the dialog itself; unapplied changes are discarded without a prompt (Abacum behaviour, not AB-key).
 - Model-only hotkeys (Alt+E, Alt+A, Alt+R, Alt+C, Alt+X):
   - On `/app/modules*`: listed in the A+B key panel and working.

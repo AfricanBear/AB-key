@@ -250,6 +250,7 @@ export const DEFAULT_CONFIG = {
   datasetTwoRowHeaderEnabled: true,
   formulaWordDeleteEnabled: true,
   datasetTransformLinkEnabled: true,
+  unsavedVariableDeleteFixEnabled: true,
   commandBindings: {
     run_primary_action: "action.primary"
   },
@@ -515,6 +516,9 @@ export function migrateConfig(rawConfig) {
   if (typeof next.datasetTwoRowHeaderEnabled !== "boolean") next.datasetTwoRowHeaderEnabled = DEFAULT_CONFIG.datasetTwoRowHeaderEnabled;
   if (typeof next.formulaWordDeleteEnabled !== "boolean") next.formulaWordDeleteEnabled = DEFAULT_CONFIG.formulaWordDeleteEnabled;
   if (typeof next.datasetTransformLinkEnabled !== "boolean") next.datasetTransformLinkEnabled = DEFAULT_CONFIG.datasetTransformLinkEnabled;
+  if (typeof next.unsavedVariableDeleteFixEnabled !== "boolean") {
+    next.unsavedVariableDeleteFixEnabled = DEFAULT_CONFIG.unsavedVariableDeleteFixEnabled;
+  }
   if (typeof next.diagnosticsEnabled !== "boolean") next.diagnosticsEnabled = DEFAULT_CONFIG.diagnosticsEnabled;
   validateConfigShape(next);
   return next;

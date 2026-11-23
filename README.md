@@ -94,6 +94,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.4.1
+
+- **Fix: Save after deleting a new unnamed variable** (Options → Features, on by default). Abacum bug: create a variable, delete it before it was ever saved (right-click → Delete variable or Alt+X, e.g. you changed your mind before typing a name), then make any other change and click Save — every Save fails with "Variable marked for deletion does not exist or could not be found" until you reload the page and lose your edits. Abacum sends the deleted row's temporary key (like `0eqLj9i5oc-valid`) in the save request; AB-key drops such keys just before the request goes out. Real deletions (sent by variable code, `T_MD_…`) are untouched, and a save without such keys goes out unchanged. Abacum's own "variable without a name" toast on delete still shows; it is harmless.
+
 ### v1.4.0
 
 - **Alt+X: delete variable** (models). Deletes the variable of the focused row (right-click → Delete variable); if rows are ticked, uses the bulk "Delete (n)" button instead. Abacum applies the deletion on Save (until then a reload brings the variable back) and refuses to delete a variable that other formulas use (it shows which ones). Config migrates to schema v8: Alt+X is added unless you already use it for your own action.
