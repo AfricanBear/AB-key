@@ -1,41 +1,87 @@
 # Architecture
 
-## Module Boundaries
+AB-key has no build step: the files in `src/` are loaded as they are. Everything runs on
+`*.abacum.io` only.
 
-- `src/background/service-worker.js`: command listener, action dispatch, global logging.
-- `src/background/config-store.js`: read-through cache, schema migration, safe updates.
-- `src/background/hotkey-orchestrator.js`: command to action resolution and host gating.
-- `src/content/content-script.js`: selector engine, dynamic wait logic, click executor.
-- `src/shared/config-schema.js`: versioned config schema and migration.
-- `src/shared/errors.js`: unified error taxonomy.
-- `src/shared/logger.js`: structured log persistence with correlation IDs.
+## Modules
 
-## Message Contracts
+### Content scripts (`src/content/`)
 
-- Worker -> Content:
-  - `EXECUTE_ACTION` with payload:
-    - `actionId`
-    - `locatorProfile`
-    - `executionPolicy`
-- Content -> Worker response:
-  - success: `{ ok: true, elapsedMs, matchedScore }`
-  - failure: `{ ok: false, error: { code, message, details? }, elapsedMs }`
+Classic scripts (no `import`; Chrome ignores `"type": "module"` for content scripts). Each reads
+`mv3ClickAutomation.config` from `chrome.storage.local` and reacts to `storage.onChanged`, so option
+changes apply to open tabs without a reload.
 
-## Selector Strategy Pipeline
+- `content-script.js` — hotkeys and the click engine (see below), plus the hotkey hints added to
+  the toolbar and navigation tooltips.
+- `toolbar-rail.js` — right toolbar buttons by position (`globalThis.AbKeyToolbarRail`).
+- `sidebar-nav.js` — left navigation links after Library by position (`globalThis.AbKeySidebarNav`).
+- `ab-key-panel-host.js` / `.css` — the in-page A+B key panel (an iframe of `src/popup/popup.html`).
+- `abacum-*.js` — one file per feature (tab title, light nav, darker values, dataset selection sum,
+  formula hints, dataset columns, formula keys, f chip → transformation step, model dimensions,
+  model Save fix).
+- `abacum-*-main.js` — the page-world half of a feature (`"world": "MAIN"`), for things only
+  reachable from the page: AG Grid apis (via the React fiber), the CodeMirror instance, the model
+  Save request. No `chrome.*` there; the isolated half talks to it with a `CustomEvent` on
+  `document` (JSON string `detail`) or an attribute on `<html>`.
 
-1. Explicit CSS selectors.
-2. Aria matching (`aria-label`, `aria-labelledby`, `role`).
-3. Text matching (contains/exact/regex).
-4. Hybrid confidence scoring and deterministic selection.
+### Background (`src/background/`)
 
-## Dynamic Content Handling
+- `service-worker.js` — install / update (runs config migrations), toggles the panel on icon click
+  (injects the panel scripts if the tab has none yet), answers `GET_CONFIG`, and handles the
+  browser command `run_primary_action` (unbound by default) by sending `EXECUTE_ACTION` to the tab.
+- `config-store.js` — read-through config cache with migration on read; dropped on
+  `storage.onChanged`.
+- `hotkey-orchestrator.js` — browser command → action resolution and host gating.
 
-- Bounded retry loop with timeout.
-- Optional `MutationObserver`-backed wait between attempts.
-- Re-query per attempt to survive DOM refreshes and hydration cycles.
+### Shared (`src/shared/`)
 
-## Extensibility Points
+- `config-schema.js` — default config (actions, hotkeys, feature flags), versioned migrations
+  (schema v9), shape validation. Changing defaults of a shipped config needs a new migration that
+  replaces only shipped values and keeps user edits.
+- `errors.js` — error codes (`ElementNotFound`, `OverlayBlocked`, `TimeoutExceeded`, …).
+- `logger.js` — structured logs (`[MV3-AUTO]` prefix) when diagnostics are on.
 
-- Add new strategy by extending candidate collection and score model in `content-script.js`.
-- Add new command bindings in config and `manifest.json`.
-- Add post-click validation handlers in execution policy.
+### UI
+
+- `src/options/` — options page: feature toggles, hotkeys and actions editor, import / export,
+  diagnostics logging.
+- `src/popup/` — hotkeys for the current page, shown in the in-page panel.
+
+## Hotkeys
+
+`content-script.js` listens to `keydown` on `window` (capture phase). A hotkey matches by the
+physical key (`event.code`), so it works with any keyboard layout. Each hotkey has `hosts` and
+optional `paths` (e.g. model-only hotkeys), checked at keypress time because Abacum is a SPA.
+The matched action runs in the page directly; the service worker is not involved.
+
+## Actions
+
+An action is `{ actionId, locatorProfile, executionPolicy }`.
+
+**Finding the element** (`locatorProfile`):
+
+1. `toolbarRail.position` / `sidebarNav.position` — positional lookup via the helpers above.
+2. `preferredSelectors` — tried strictly in order; the first visible, enabled, uncovered match wins.
+3. Scored search over `selectorCandidates` (CSS), `ariaCriteria` and `textCriteria`
+   (contains / exact / regex), with deterministic tiebreakers.
+
+**Running it** (`executionPolicy`):
+
+- `preActions` (e.g. `blurActiveElement`) before the first step.
+- `steps` — a sequence of locators clicked one after another (e.g. "+" → Create variable); a step's
+  `trigger: "contextmenu"` opens the element's right-click menu instead of clicking.
+- `alternatives` — several step lists; the first whose first step finds its element runs (e.g. bulk
+  toolbar when rows are ticked, else the focused row's menu).
+- `retryPolicy` (`attempts`, `intervalMs`, `useMutationObserver`) and `timeoutMs` — elements are
+  re-queried on every attempt; between attempts the script waits for a DOM mutation or the interval.
+- Before clicking, a hit test reports `OverlayBlocked` when another node covers the element.
+
+Result: `{ ok: true, elapsedMs, matchedScore }` or `{ ok: false, error: { code, message }, elapsedMs }`.
+
+## Extending
+
+- New hotkey on an existing kind of target: add an action and a hotkey to the default config with a
+  migration and a test (`tests/config-migration.test.mjs`, `tests/locators.test.mjs`).
+- New feature: a new `src/content/abacum-<name>.js` (plus `-main.js` if it needs page objects), a
+  flag in the config with an options toggle, a `manifest.json` entry, and a test using
+  `tests/helpers.mjs`.

@@ -1,96 +1,117 @@
 # AB-key Extension
 
-Standalone Chromium Manifest V3 extension for hotkey-triggered click automation on complex targets where IDs and stable classes are unavailable.
+Chrome (and Opera) Manifest V3 extension that adds hotkeys and small improvements to
+[Abacum](https://app.abacum.io). It runs only on `*.abacum.io` pages. Not published in the Chrome
+Web Store: install it unpacked (see [Install](#install-chrome)).
 
-## Scope (v1)
+Click the extension icon on an Abacum page to open the **A+B key** panel with the hotkeys for that
+page. Every feature below can be switched on or off in the extension options.
 
-- Hotkey to action mapping.
-- Action execution via content script using resilient selector strategies.
-- Dynamic DOM support with retries and optional observers.
-- Config storage in `chrome.storage.local` with schema versioning.
-- Debug logs and structured error handling.
+## Hotkeys
 
-## Non-goals (v1)
+Hotkeys are handled inside the Abacum page, so they are not listed in `chrome://extensions/shortcuts`.
+They also work with a Russian keyboard layout.
 
-- Full macro recording.
-- Visual automation builder.
-- Non-Chromium browser support.
+| Hotkey | Where | What it does |
+| --- | --- | --- |
+| Alt+1–5 | any page with the right toolbar | Opens the right toolbar button by position, top to bottom (the AI agent button is skipped). Models: Info, Settings, Dimensions, Activity. Datasets: Info, Scheduler, Transform, Data usage, Activity. |
+| Alt+Shift+1–9 | any page | Opens the left navigation link by position after Library: Spaces, Models, Versions, Dimensions, Datasets, Integrations. |
+| Alt+S | any page | Save. |
+| Alt+Q | any page | Opens / closes the AI chat. |
+| Alt+H | any page | Opens Abacum Academy in a new tab. |
+| Alt+E | models | Edit Dimensions (needs the right Dimensions panel open). |
+| Alt+A | models | "+" → Create variable on the hovered row. |
+| Alt+R | models | Renames the focused variable. |
+| Alt+C | models | Duplicates the focused variable (or the ticked ones). Abacum saves the copy at once. |
+| Alt+X | models | Deletes the focused variable (or the ticked ones). Applied on Save. |
+| Alt+G | models | Regenerates the focused variable's description with Abacum's AI. Applied on Save. |
 
-## Success Metrics
+Hovering a toolbar button or a navigation link shows its hotkey in the tooltip.
 
-- Action success rate: >= 95% on supported target pages.
-- P50 keypress-to-click latency: <= 150 ms for immediately available elements.
-- P95 keypress-to-click latency: <= 1000 ms including dynamic waits.
-- Zero leaked observers after action completion.
+## Features
 
-## Capability Matrix
+**Appearance**
 
-- Native interactive: `button`, `a`, `input[type=button|submit]`.
-- Semantic interactive: `[role=button]`, `[role=menuitem]`.
-- Complex wrappers: icon controls, nested labels, dynamic containers.
-- Text-identified: exact/contains/regex text.
-- Aria-identified: `aria-label`, `aria-labelledby`, `role`.
+- Client name in the browser tab title.
+- Light theme navigation (off by default).
+- Darker values in model cells.
 
-## Risks and Mitigations
+**Models**
 
-- Dynamic re-render breaks node refs -> re-query on each attempt, observer-assisted retry.
-- Overlay intercepts click -> hit-test and surface `OverlayBlocked`.
-- Ambiguous target matches -> confidence score and deterministic tiebreakers.
-- Service worker lifecycle resets state -> read-through config cache and lazy rehydrate.
-- Permission friction -> minimal default permissions and host filtering.
+- Formula autocomplete opens beside the Cell Editor instead of covering the formula (always on).
+- Ctrl+Backspace in formulas deletes one word instead of clearing the whole formula.
+- Dimensions toggle in the model builder: dimensions shown as chips under each variable name.
+- Fix for Abacum's failing Save after deleting a new, never-saved variable.
 
-## Architecture Overview
+**Datasets**
 
-- `background/service-worker.js`: hotkey commands, tab dispatch, orchestration.
-- `content/content-script.js`: DOM lookup, validation, click execution.
-- `background/config-store.js`: versioned configuration, migrations, persistence.
-- `shared/*`: schema, error taxonomy, logging helpers.
-- `options/*`: configuration UI, import/export, diagnostics toggle.
+- Sum, count and average of the selected cells in the Viewer.
+- Pin data columns in the Viewer.
+- Two-row column headers in the Viewer.
+- Clicking the f chip in a transformed column's header selects its transformation step.
 
-## Quick Start
+Details for each feature are in [Releases](#releases).
+
+## How it works
+
+No build step: the files in `src/` are loaded as they are.
+
+- `src/content/` — content scripts, only on `*.abacum.io`. Each reads its options from
+  `chrome.storage.local` and applies changes without a page reload.
+  - `content-script.js` — hotkeys (`keydown` on the page) and the click engine: configured
+    selectors first, then a scored search by text and ARIA, with retries and a `MutationObserver`.
+  - `toolbar-rail.js`, `sidebar-nav.js` — find the right toolbar buttons and left navigation links
+    by position.
+  - `ab-key-panel-host.js` — the in-page A+B key panel.
+  - `abacum-*.js` — the features above. Files ending in `-main.js` run in the page world
+    (`"world": "MAIN"`) where they can reach Abacum's grid and editor objects.
+- `src/background/` — service worker: install / update (config migrations) and opening the panel
+  on icon click.
+- `src/shared/` — config schema with defaults and migrations, error codes, logger.
+- `src/options/`, `src/popup/` — options page (feature toggles, hotkeys and actions, import /
+  export, diagnostics logging) and the hotkey panel.
+
+More in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Install (Chrome)
 
 1. Open `chrome://extensions`.
-2. Turn on **Developer mode** (toggle in the top-right corner). This is required: AB-key is not published in the Chrome Web Store, and the **Load unpacked** button only appears in Developer mode.
+2. Turn on **Developer mode** (toggle in the top-right corner). This is required: the **Load unpacked** button only appears in Developer mode.
 3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
-4. Open an Abacum page and click the extension icon to see the hotkeys for that page. Features can be switched on or off in the extension options.
+4. Open an Abacum page and click the extension icon to see the hotkeys for that page.
 5. To update: `git pull`, then click **Reload** on the AB-key card in `chrome://extensions` and refresh open Abacum tabs.
 
-## Quick Guide (Opera)
+## Install (Opera)
 
 1. Open `opera://extensions`.
 2. Turn on **Developer mode** — required for **Load unpacked**, same as in Chrome.
-3. Click **Load unpacked** and choose `C:\Users\kuzne\AB-key`.
-4. Open extension details, then open **Extension options** to review mappings.
-5. Open `opera://extensions/shortcuts` and confirm hotkeys are not conflicting.
-6. Test one action on an allowed site (for example `app.abacum.io`).
+3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
+4. Open an Abacum page and try a hotkey, e.g. Alt+1.
 
-### Opera Troubleshooting
+If a hotkey does nothing:
 
-- If hotkeys do nothing, rebind them in `opera://extensions/shortcuts`.
-- If automation fails on internal pages (`opera://*`), switch to a regular web page; content scripts are blocked on restricted pages.
-- If action fails due to selector timing, enable diagnostics in options and retry.
+- Refresh the Abacum tab (content scripts are not added to tabs opened before the install or update).
+- Check that the feature or hotkey is enabled in the extension options.
+- Turn on **Enable diagnostics logging** in the options, retry, and check the console (lines start with `[MV3-AUTO]`).
 
 ## Tests
 
 Requires Node.js 22+. No dependencies to install.
 
 - `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
-- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+Shift+1–9 / Alt+E / Alt+S / Alt+A / Alt+Q / Alt+H / Alt+R / Alt+C / Alt+X, rail and navigation tooltip hints, darker model values, the dataset selection sum and formula hint placement.
-- The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
+- Covered: config migrations (every schema version from v1), hotkey matching (layouts, hosts,
+  model-only paths), locators for every default hotkey, tooltip hints, each feature in
+  `src/content/abacum-*.js`, and the options page.
+- Content scripts run in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum
+  behaviour still needs the manual checks in [`docs/TEST_PLAN.md`](docs/TEST_PLAN.md).
+- `powershell -ExecutionPolicy Bypass -File scripts/validate.ps1` — manifest checks.
 
 CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
 
 ## Packaging
 
-Run the PowerShell script:
-
-- `./scripts/package.ps1`
-
-This creates a distributable zip in `dist`.
-
-For Opera-labeled packaging:
-
-- `./scripts/package.ps1 -Target opera`
+- `./scripts/package.ps1` — zip into `dist/`.
+- `./scripts/package.ps1 -Target opera` — Opera-labeled zip.
 
 ## Releases
 
@@ -265,5 +286,5 @@ Full release notes (including v0.1.0 Opera packaging): [`docs/RELEASE_NOTES_OPER
 
 For implementation history and continuation notes, see:
 
-- `docs/PROJECT_STATUS.md`
-- `docs/ROADMAP.md` — planned features (e.g. higher contrast model cells on Abacum)
+- [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md)
+- `docs/ROADMAP.md` — planned features
