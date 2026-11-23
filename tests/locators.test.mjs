@@ -216,3 +216,44 @@ test("Alt+X does nothing when no variable is focused or ticked, or outside model
   Object.assign(elsewhere.dom, { [FOCUSED_NAME]: [elsewhere.element("Revenue")], [ROW_MENU_ITEMS]: items });
   assert.deepEqual(await pressKey(elsewhere, "KeyX", { wait: 600 }), []);
 });
+
+// --- v9: Alt+G regenerates the AI description -------------------------------------------------
+
+const EDIT_DESCRIPTION = "[data-testid='toolbar-drawer'] button[aria-label='Edit description']";
+const EDIT_DESCRIPTION_IF_FOCUSED = `body:has(.ag-row.variable-row.ag-row-focus) ${EDIT_DESCRIPTION}`;
+const AI_GENERATE = "[data-testid='ai-generate-description-button']";
+const INFO_RAIL = "button[data-testid='toolbar-rail-button-module-info']";
+
+test("Alt+G with the Info drawer open: Edit description, then AI generate (no Save)", async () => {
+  const page = createPage();
+  Object.assign(page.dom, {
+    [EDIT_DESCRIPTION_IF_FOCUSED]: [page.element("Edit description")],
+    [EDIT_DESCRIPTION]: [page.element("Edit description")],
+    [FOCUSED_NAME]: [page.element("Revenue")],
+    [INFO_RAIL]: [page.element("Info")],
+    [AI_GENERATE]: [page.element("AI generate")]
+  });
+  page.dom["*"] = [page.element("Save")];
+  assert.deepEqual(await pressKey(page, "KeyG"), ["Edit description", "AI generate"], "Info not toggled closed");
+});
+
+test("Alt+G with the drawer closed: focused row, Info, Edit description, AI generate", async () => {
+  const page = createPage();
+  Object.assign(page.dom, {
+    [FOCUSED_NAME]: [page.element("Revenue")],
+    [INFO_RAIL]: [page.element("Info")],
+    [EDIT_DESCRIPTION]: [page.element("Edit description")],
+    [AI_GENERATE]: [page.element("AI generate")]
+  });
+  assert.deepEqual(await pressKey(page, "KeyG"), ["Revenue", "Info", "Edit description", "AI generate"]);
+});
+
+test("Alt+G does nothing without a focused variable (the model's own description stays)", async () => {
+  const page = createPage();
+  Object.assign(page.dom, {
+    [EDIT_DESCRIPTION]: [page.element("Edit description")],
+    [INFO_RAIL]: [page.element("Info")],
+    [AI_GENERATE]: [page.element("AI generate")]
+  });
+  assert.deepEqual(await pressKey(page, "KeyG", { wait: 3500 }), []);
+});

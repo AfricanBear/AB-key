@@ -24,11 +24,16 @@ const V7_ACTION_IDS = [
 
 // Added in schema v8.
 const V8_ACTION_IDS = ["action.deleteVariable"];
+const V9_ACTION_IDS = ["action.aiDescription"];
 
 /** Stored config as an older version would have left it: migrate v1, then roll back the version. */
 function storedAt(version, mutate = () => {}) {
   const config = migrateConfig(loadV1Config());
   config.configVersion = version;
+  if (version < 9) {
+    config.actions = config.actions.filter((item) => !V9_ACTION_IDS.includes(item.actionId));
+    config.hotkeys = config.hotkeys.filter((item) => !V9_ACTION_IDS.includes(item.actionId));
+  }
   if (version < 8) {
     config.actions = config.actions.filter((item) => !V8_ACTION_IDS.includes(item.actionId));
     config.hotkeys = config.hotkeys.filter((item) => !V8_ACTION_IDS.includes(item.actionId));
@@ -246,7 +251,7 @@ test("v7 -> v8: Alt+X added; a user's own Alt+X is left alone", () => {
   const v7 = storedAt(7);
   assert.equal(action(v7, "action.deleteVariable"), undefined, "fixture is a real v7 config");
   const migrated = migrateConfig(v7);
-  assert.equal(migrated.configVersion, 8);
+  assert.equal(migrated.configVersion, CURRENT_CONFIG_VERSION);
   assert.equal(hotkey(migrated, "alt+x").actionId, "action.deleteVariable");
   assert.deepEqual(action(migrated, "action.deleteVariable"), action(createDefaultConfig(), "action.deleteVariable"));
   assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
@@ -260,4 +265,43 @@ test("v7 -> v8: Alt+X added; a user's own Alt+X is left alone", () => {
   assert.equal(hotkey(own, "alt+x").actionId, "action.mine", "user's Alt+X kept");
   assert.equal(own.hotkeys.filter((item) => item.key === "alt+x").length, 1);
   assert.ok(action(own, "action.deleteVariable"), "action exists, just unbound");
+});
+
+// --- v9: Alt+G regenerates the AI description ------------------------------------------------
+
+test("v9 defaults: Alt+G (models only) runs Edit description -> AI generate, never Save", () => {
+  const config = createDefaultConfig();
+  assert.deepEqual(hotkey(config, "alt+g"), { key: "alt+g", actionId: "action.aiDescription", hosts: ["app.abacum.io"], paths: ["/app/modules"] });
+  const ai = action(config, "action.aiDescription");
+  assert.equal(ai.enabled, true);
+  const [open, closed] = ai.executionPolicy.alternatives;
+  assert.match(open.steps[0].locatorProfile.preferredSelectors[0], /^body:has\(\.ag-row\.variable-row\.ag-row-focus\) .*Edit description/);
+  assert.equal(closed.steps[0].locatorProfile.preferredSelectors[0], ".ag-row.variable-row.ag-row-focus [col-id='name']");
+  assert.equal(closed.steps[1].locatorProfile.preferredSelectors[0], "button[data-testid='toolbar-rail-button-module-info']");
+  for (const alternative of [open, closed]) {
+    const last = alternative.steps.at(-1).locatorProfile.preferredSelectors[0];
+    assert.equal(last, "[data-testid='ai-generate-description-button']", "ends at AI generate");
+    assert.ok(alternative.steps.every((step) => !/save/i.test(JSON.stringify(step))), "never clicks Save");
+  }
+  const keys = config.hotkeys.map((item) => item.key);
+  assert.equal(new Set(keys).size, keys.length, "no key bound twice");
+});
+
+test("v8 -> v9: Alt+G added; a user's own Alt+G is left alone", () => {
+  const v8 = storedAt(8);
+  assert.equal(action(v8, "action.aiDescription"), undefined, "fixture is a real v8 config");
+  const migrated = migrateConfig(v8);
+  assert.equal(migrated.configVersion, 9);
+  assert.equal(hotkey(migrated, "alt+g").actionId, "action.aiDescription");
+  assert.deepEqual(action(migrated, "action.aiDescription"), action(createDefaultConfig(), "action.aiDescription"));
+  assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
+
+  const own = migrateConfig(
+    storedAt(8, (config) => {
+      config.actions.push({ actionId: "action.mine", enabled: true, locatorProfile: { selectorCandidates: ["#x"] }, executionPolicy: {} });
+      config.hotkeys.push({ key: "alt+g", actionId: "action.mine", hosts: ["app.abacum.io"] });
+    })
+  );
+  assert.equal(hotkey(own, "alt+g").actionId, "action.mine", "user's Alt+G kept");
+  assert.ok(action(own, "action.aiDescription"), "action exists, just unbound");
 });
