@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 8;
+export const CURRENT_CONFIG_VERSION = 9;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -235,6 +235,52 @@ const V7_HOTKEYS = [
   { key: "alt+c", actionId: "action.duplicateVariable", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }
 ];
 
+// Alt+G: regenerate the focused variable's description with Abacum's AI. Info drawer (opened if
+// needed) -> Edit description -> AI generate. Abacum then replaces the text at once and closes
+// the editor; the change waits for the model's Save (a reload without Save brings the old text
+// back). AB-key never clicks Save. Only with a focused variable row: without one the drawer
+// shows the model, whose description must not be touched.
+const FOCUSED_ROW = ".ag-row.variable-row.ag-row-focus";
+const EDIT_DESCRIPTION = "[data-testid='toolbar-drawer'] button[aria-label='Edit description']";
+const AI_GENERATE = "[data-testid='ai-generate-description-button']";
+const descriptionSteps = [
+  { locatorProfile: { preferredSelectors: [EDIT_DESCRIPTION], preferredOnly: true } },
+  { locatorProfile: { preferredSelectors: [AI_GENERATE], preferredOnly: true } }
+];
+const AI_DESCRIPTION_ACTION = {
+  actionId: "action.aiDescription",
+  label: "AI description (variable)",
+  enabled: true,
+  scope: { hosts: [...ABACUM_HOSTS] },
+  // Unused while executionPolicy.alternatives is set; kept for the schema (required field).
+  locatorProfile: { preferredSelectors: [AI_GENERATE], preferredOnly: true },
+  executionPolicy: {
+    timeoutMs: 3000,
+    retryPolicy: { attempts: 12, intervalMs: 200, useMutationObserver: true },
+    alternatives: [
+      // Drawer already open on the focused variable.
+      {
+        steps: [
+          { locatorProfile: { preferredSelectors: [`body:has(${FOCUSED_ROW}) ${EDIT_DESCRIPTION}`], preferredOnly: true } },
+          descriptionSteps[1]
+        ]
+      },
+      // Drawer closed: keep the row focused, open Info, then the same two clicks.
+      {
+        steps: [
+          { locatorProfile: { preferredSelectors: [`${FOCUSED_ROW} [col-id='name']`], preferredOnly: true } },
+          { locatorProfile: { preferredSelectors: ["button[data-testid='toolbar-rail-button-module-info']"], preferredOnly: true } },
+          ...descriptionSteps
+        ]
+      }
+    ]
+  }
+};
+
+// Added in schema v9.
+const V9_ACTIONS = [AI_DESCRIPTION_ACTION];
+const V9_HOTKEYS = [{ key: "alt+g", actionId: "action.aiDescription", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }];
+
 // Added in schema v8.
 const V8_ACTIONS = [DELETE_VARIABLE_ACTION];
 const V8_HOTKEYS = [{ key: "alt+x", actionId: "action.deleteVariable", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }];
@@ -260,7 +306,8 @@ export const DEFAULT_CONFIG = {
     { key: "alt+s", actionId: "action.save", hosts: [...ABACUM_HOSTS] },
     { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
     ...structuredClone(V7_HOTKEYS),
-    ...structuredClone(V8_HOTKEYS)
+    ...structuredClone(V8_HOTKEYS),
+    ...structuredClone(V9_HOTKEYS)
   ],
   actions: [
     {
@@ -319,7 +366,8 @@ export const DEFAULT_CONFIG = {
       }
     },
     ...structuredClone(V7_ACTIONS),
-    ...structuredClone(V8_ACTIONS)
+    ...structuredClone(V8_ACTIONS),
+    ...structuredClone(V9_ACTIONS)
   ]
 };
 
@@ -479,6 +527,20 @@ function migrateV7ToV8(v7) {
   return next;
 }
 
+// v8 -> v9: Alt+G regenerates the focused variable's AI description (stops before Save).
+function migrateV8ToV9(v8) {
+  const next = structuredClone(v8);
+  next.hotkeys = next.hotkeys || [];
+  for (const action of V9_ACTIONS) {
+    if (!next.actions.some((item) => item.actionId === action.actionId)) next.actions.push(structuredClone(action));
+  }
+  for (const hotkey of V9_HOTKEYS) {
+    if (!next.hotkeys.some((item) => item.key === hotkey.key)) next.hotkeys.push(structuredClone(hotkey));
+  }
+  next.configVersion = 9;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -507,6 +569,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 8) {
     next = migrateV7ToV8(next);
+  }
+  if (version < 9) {
+    next = migrateV8ToV9(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;

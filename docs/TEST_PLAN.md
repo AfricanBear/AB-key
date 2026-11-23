@@ -107,6 +107,10 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Focused row: creates "<name> (1)". Delete it afterwards (row menu → Delete variable) and press Save.
   - Ticked rows: uses the bulk "Duplicate (n)" button instead of the row menu.
   - No focused or ticked row: nothing happens.
+- Alt+G (models) — use a test model and do not press Save:
+  - Focused row, Info panel closed: Info opens on that variable, a few seconds later the description is replaced, Save becomes active. Reload: the old description is back.
+  - Focused row, Info panel already open: same, the panel is not closed.
+  - No focused row (Info shows the model): nothing happens.
 - Alt+X (models) — use a test model and do not press Save:
   - Focused row of a variable no formula uses: the row disappears, Save becomes active; reload the page to get it back.
   - Focused row of a variable other formulas use: Abacum shows a red toast naming them; nothing is deleted.

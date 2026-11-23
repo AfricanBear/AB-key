@@ -27,7 +27,7 @@ answer in Russian; code, commits, PRs and repo docs are in English.
     (`abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`). `*-main.js` run
     in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
     attribute on `<html>`.
-- `src/shared/config-schema.js` — defaults + migrations (schema v8). Changing defaults of a shipped
+- `src/shared/config-schema.js` — defaults + migrations (schema v9). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
 - `src/options/`, `src/popup/` — options page and hotkey panel (ES modules, fine there).
@@ -84,7 +84,9 @@ Abacum releases.
   Creating or deleting rows sends nothing until Save. After any save test, reload and check: a 200
   with an empty `updated_fields` does not prove a deletion happened.
 - Variable Info (focused row + Info drawer, `data-testid="toolbar-drawer"`): Description with
-  `Edit description` → textarea, `ai-generate-description-button`, Cancel / Save. Grid row data
+  `Edit description` → textarea, `ai-generate-description-button`, Cancel / Save. AI generate
+  replaces the text itself and closes the editor at once (no review step); the change waits for
+  the model Save, a reload without Save restores it. Grid row data
   (page-world api) has `description`, `description_ai_generated`, `dimensions` (names).
 - Edit Dimensions (`testid-builder-bulk-dimensions`) exists only with the right **Dimensions**
   panel open. Its dialog closes with Esc natively (unapplied changes are lost);

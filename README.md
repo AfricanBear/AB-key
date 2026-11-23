@@ -94,6 +94,10 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.5.0
+
+- **Alt+G: AI description** (models). Regenerates the focused variable's description with Abacum's AI: opens the Info panel if needed, then Edit description → AI generate. Abacum replaces the description at once (including a hand-written one) and keeps the change until you press Save; reload without Save to get the old text back. Without a focused variable row nothing happens, so the model's own description is never touched. Config migrates to schema v9: Alt+G is added unless you already use it.
+
 ### v1.4.1
 
 - **Fix: Save after deleting a new unnamed variable** (Options → Features, on by default). Abacum bug: create a variable, delete it before it was ever saved (right-click → Delete variable or Alt+X, e.g. you changed your mind before typing a name), then make any other change and click Save — every Save fails with "Variable marked for deletion does not exist or could not be found" until you reload the page and lose your edits. Abacum sends the deleted row's temporary key (like `0eqLj9i5oc-valid`) in the save request; AB-key drops such keys just before the request goes out. Real deletions (sent by variable code, `T_MD_…`) are untouched, and a save without such keys goes out unchanged. Abacum's own "variable without a name" toast on delete still shows; it is harmless.
