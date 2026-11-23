@@ -134,7 +134,8 @@ When changing the config schema, add a migration test to `tests/config-migration
   - With the variable's dimensions button visible: opens the dimensions modal (`module-builder-dbv-modal`).
   - Without that button on the page (or while the modal is open): nothing is clicked — in particular not "Show Builder Formulas".
 - Extension reload / update keeps the saved configuration (not reset to defaults).
-- Options → Configuration (JSON is what Save stores):
+- Options → Advanced → Configuration (JSON is what Save stores):
+  - Collapsed on first open; open it, reload Options: still open; close it, reload: closed. A failed Save opens it.
   - Switching a toggle changes its flag in the JSON at once; Save marks one change, not two.
   - Typing a flag in the JSON (e.g. `"diagnosticsEnabled": true`) moves its toggle; half-typed JSON leaves toggles alone, and clicking a toggle then shows "Fix the JSON below first".
   - Export, flip a few toggles, Import the file: toggles show the file's flags; Save keeps them.

@@ -50,6 +50,7 @@ for (const input of featureToggles) {
     const next = setFlagInText(configText.value, input.id, input.checked);
     if (next === null) {
       input.checked = !input.checked;
+      configDetails.open = true;
       setStatus("Fix the JSON below first: toggles write into it.", true);
       return;
     }
@@ -61,6 +62,23 @@ for (const input of featureToggles) {
 configText.addEventListener("input", () => {
   showFlags(configText.value); // half-typed JSON leaves the toggles as they are
   refreshDirty();
+});
+
+// --- Advanced → Configuration: collapsed by default, remembered in this browser ---
+const configDetails = document.getElementById("configDetails");
+const CONFIG_OPEN_KEY = "abKey.options.configOpen";
+
+try {
+  configDetails.open = localStorage.getItem(CONFIG_OPEN_KEY) === "1";
+} catch {
+  // Storage unavailable: stay collapsed.
+}
+configDetails.addEventListener("toggle", () => {
+  try {
+    localStorage.setItem(CONFIG_OPEN_KEY, configDetails.open ? "1" : "0");
+  } catch {
+    // Not remembered; nothing else depends on it.
+  }
 });
 
 // Closing or reloading the tab with unsaved changes shows the browser's "Leave site?" dialog.
@@ -124,6 +142,7 @@ async function saveConfig() {
     if (warnings.length) setWarnings("Configuration saved, but some hotkeys will not work:", warnings);
     else setStatus("Configuration saved.");
   } catch (error) {
+    configDetails.open = true; // the problem is in the JSON: show it
     setStatus(`Save failed: ${error.message}`, true);
   }
 }

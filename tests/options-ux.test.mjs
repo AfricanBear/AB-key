@@ -148,6 +148,31 @@ test("Options explains the Verbose console level and the hotkey format", () => {
   assert.match(read("src/options/options.css"), /\.status\.is-warn \{/);
 });
 
+test("Configuration sits in Advanced as a native <details>, collapsed by default and remembered", () => {
+  const html = read("src/options/options.html");
+  const advanced = html.match(/<legend class="feature-group-title">Advanced<\/legend>([\s\S]*?)<\/fieldset>/)[1];
+  const details = advanced.match(/<details class="config-details" id="configDetails">[\s\S]*?<\/details>/);
+  assert.ok(details, "Configuration is a <details> inside Advanced");
+  assert.doesNotMatch(details[0].split("\n")[0], /\bopen\b/, "collapsed by default");
+  assert.match(details[0], /<summary class="config-summary">[\s\S]*Configuration/);
+  for (const id of ["configJson", "reloadBtn", "exportBtn", "importBtn"]) {
+    assert.match(details[0], new RegExp(`id="${id}"`), `${id} inside the section`);
+  }
+  assert.doesNotMatch(html, /card-config/, "the old separate card is gone");
+  assert.match(html, /<\/main>/);
+  assert.ok(html.indexOf('id="status"') > html.indexOf("</details>"), "status stays visible outside the section");
+
+  const js = read("src/options/options.js");
+  assert.match(js, /configDetails\.open = localStorage\.getItem\(CONFIG_OPEN_KEY\) === "1"/);
+  assert.match(js, /configDetails\.addEventListener\("toggle"[\s\S]*?localStorage\.setItem\(CONFIG_OPEN_KEY/);
+  const save = js.match(/async function saveConfig\(\) \{[\s\S]*?\n\}/)[0];
+  assert.match(save, /catch \(error\) \{\s*configDetails\.open = true;/, "a failed Save shows the JSON");
+
+  const css = read("src/options/options.css");
+  assert.match(css, /\.config-summary::-webkit-details-marker \{\s*display: none;/);
+  assert.match(css, /\.config-details\[open\] > \.config-summary::before \{\s*transform: rotate\(90deg\);/);
+});
+
 // --- No browser command left -------------------------------------------------------------
 
 test("manifest has no browser command; nothing sends EXECUTE_ACTION or stores logs", () => {

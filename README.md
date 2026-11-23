@@ -120,6 +120,7 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 
 - **Fix: Import kept the toggles, not the file's flags.** On Save the Options page wrote the toggles over the feature flags in the JSON, so flags from an imported file (or typed into the JSON) were silently replaced. The JSON is now what Save stores: a toggle edits its flag in the JSON, and importing or typing a flag moves its toggle.
 - **Hotkey warnings on Save.** Options warns (and still saves) when a hotkey cannot fire: its action is missing or disabled, it has no Alt/Ctrl/Meta, or an earlier binding takes the same key on the same pages.
+- The Configuration JSON moved to Options → Features → **Advanced** as a section that is collapsed by default; the page remembers whether you left it open. A failed Save (or a toggle blocked by broken JSON) opens it.
 - Options explains the hotkey format (`alt+shift+1`, letters by physical key) and that diagnostics logs show at the console's **Verbose** level, prefixed `[AB-key]`.
 - Removed the unused browser command (`run_primary_action`, never bound) with its disabled "Submit" example action, and the service worker's log in storage that nothing showed. Config migrates to schema v10: `commandBindings` and that action are dropped (the action stays if one of your hotkeys uses it); the old log is deleted on update.
 
