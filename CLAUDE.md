@@ -22,7 +22,8 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `ab-key-panel-host.js` — in-page A+B key panel (iframe of `src/popup/popup.html`).
   - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints,
     dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`),
-    formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`). `*-main.js` run
+    formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`), f chip → transformation
+    step (`abacum-dataset-transform-link.js`). `*-main.js` run
     in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
     attribute on `<html>`.
 - `src/shared/config-schema.js` — defaults + migrations (schema v7). Changing defaults of a shipped
@@ -86,6 +87,16 @@ Abacum releases.
   Header: `headerHeight` grid option 32 (set by Abacum, so only `setGridOption` changes it);
   `[data-testid="custom-column-header"]` is a `row-reverse` flex of two `.ag-header-cell-menu-button`
   (options, filter; opacity 0 until `.ag-header-active`) and `.ag-header-cell-label`.
+- Dataset Transform panel (`toolbar-rail-button-dataset-transform`; URL keeps `?panel=info`): steps are
+  `ul[data-rfd-droppable-id="transformations-dnd-list"] [data-rfd-draggable-id="<index>-<column>"]`
+  (MUI `ListItemButton`, no testid); the selected one has `Mui-selected` and a check icon, the last
+  step by default. `.click()` on a step selects it, highlights and scrolls to its column. Step
+  menu (`aria-label="display more actions"`): Edit opens a modal dialog (Cancel / Continue), Delete.
+  Add menu (`add-transformation-menu`): Apply formula, AI data cleaner, AI classifier. Transformed
+  columns have an f chip in the header (`[aria-label="status-icon-container"]
+  [data-testid="testid-abax-chip"]` with `svg[data-testid="function-icon"]`); clicking it shows
+  the column in the panel header but does not move the list selection. Their headers are not
+  sortable; source columns are.
 - Model pages: `/app/modules/...`. `<title>` lives in `<head>` and changes on in-app navigation.
 
 ## Working agreements
