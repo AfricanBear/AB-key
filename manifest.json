@@ -63,6 +63,11 @@
       "js": ["src/content/abacum-formula-keys-main.js"],
       "run_at": "document_idle",
       "world": "MAIN"
+    },
+    {
+      "matches": ["*://*.abacum.io/*"],
+      "js": ["src/content/abacum-dataset-transform-link.js"],
+      "run_at": "document_idle"
     }
   ],
   "commands": {

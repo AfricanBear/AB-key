@@ -249,6 +249,7 @@ export const DEFAULT_CONFIG = {
   datasetPinColumnsEnabled: true,
   datasetTwoRowHeaderEnabled: true,
   formulaWordDeleteEnabled: true,
+  datasetTransformLinkEnabled: true,
   commandBindings: {
     run_primary_action: "action.primary"
   },
@@ -513,6 +514,7 @@ export function migrateConfig(rawConfig) {
   if (typeof next.datasetPinColumnsEnabled !== "boolean") next.datasetPinColumnsEnabled = DEFAULT_CONFIG.datasetPinColumnsEnabled;
   if (typeof next.datasetTwoRowHeaderEnabled !== "boolean") next.datasetTwoRowHeaderEnabled = DEFAULT_CONFIG.datasetTwoRowHeaderEnabled;
   if (typeof next.formulaWordDeleteEnabled !== "boolean") next.formulaWordDeleteEnabled = DEFAULT_CONFIG.formulaWordDeleteEnabled;
+  if (typeof next.datasetTransformLinkEnabled !== "boolean") next.datasetTransformLinkEnabled = DEFAULT_CONFIG.datasetTransformLinkEnabled;
   if (typeof next.diagnosticsEnabled !== "boolean") next.diagnosticsEnabled = DEFAULT_CONFIG.diagnosticsEnabled;
   validateConfigShape(next);
   return next;

@@ -86,6 +86,14 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Text selected: only the selection is deleted.
   - Ctrl+Delete deletes the next word; plain Backspace deletes one character; Cancel / Esc restores the formula, Save stays disabled.
   - Off: Ctrl+Backspace clears the whole formula again (Abacum's behaviour); switching applies to open tabs without reload.
+- f chip → transformation step (Options → Features, on by default; a dataset with several transformations, Viewer tab, Transform panel open):
+  - Click the f chip of a transformed column: Abacum shows the column in the panel header and highlights it, and the step for that column gets the check mark in the list. With two steps for one column, the later one is selected.
+  - Hover the f chip: background darker blue with a thin ring, tooltip "Show transformation step"; pressed: darker still. Other chips and icons in the header unchanged.
+  - Click the column name or a cell: no step changes (sorting and the selection sum work as before).
+  - Transform panel closed (another panel or none): the chip does what Abacum does, nothing else.
+  - Step Edit dialog open: the header cannot be clicked; Cancel leaves Save disabled.
+  - Off: the list selection does not move, no hover state, no new tooltips; switching applies to open tabs without reload.
+  - Options: the toggle text shows the blue f icon.
 - Left navigation (Alt+Shift+1–9, any Abacum page):
   - Alt+Shift+1 Spaces, 2 Models, 3 Versions, 4 Dimensions, 5 Datasets, 6 Integrations (order as in the sidebar after Library).
   - Alt+Shift+7–9 do nothing while there are only six links; "More" is never opened.
