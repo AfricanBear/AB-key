@@ -28,7 +28,7 @@ answer in Russian; code, commits, PRs and repo docs are in English.
     (`abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`). `*-main.js` run
     in `"world": "MAIN"`: no `chrome.*` there, talk via `CustomEvent` with JSON detail or an
     attribute on `<html>`.
-- `src/shared/config-schema.js` — defaults + migrations (schema v9). Changing defaults of a shipped
+- `src/shared/config-schema.js` — defaults + migrations (schema v10). Changing defaults of a shipped
   config means a new migration that replaces only shipped values and keeps user edits, plus a test.
 - `src/background/` — service worker (install/update, panel injection on icon click).
 - `src/options/`, `src/popup/` — options page and hotkey panel (ES modules, fine there).

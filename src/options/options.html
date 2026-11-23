@@ -130,7 +130,7 @@
               <input type="checkbox" id="diagnosticsEnabled" />
               <span class="toggle-body">
                 <span class="toggle-text">Enable diagnostics logging</span>
-                <span class="toggle-hint">Logs each hotkey lookup to the browser console and outlines the matched element.</span>
+                <span class="toggle-hint">Hotkeys only: logs each lookup to the page console with the <code>[AB-key]</code> prefix and outlines the matched element in pink. In DevTools → Console, turn on the <b>Verbose</b> level to see the messages.</span>
               </span>
             </label>
           </fieldset>
@@ -147,6 +147,7 @@
           </div>
         </div>
         <p class="hint">Alt+1–5 click the right toolbar rail buttons by position, top to bottom; the rail differs by object type. Open the A+B key panel on an Abacum page to see what each hotkey does there.</p>
+        <p class="hint">This JSON is what Save stores, toggles above included: switching a toggle edits its flag here, and Import shows the file's flags on the toggles. Hotkeys are written like <code>alt+g</code> or <code>alt+shift+1</code> (modifiers <code>ctrl</code>, <code>alt</code>, <code>shift</code>, <code>meta</code>, then the key); letters match the physical key, so any keyboard layout works. Save warns about hotkeys that cannot fire.</p>
         <label class="field-label" for="configJson">JSON</label>
         <textarea id="configJson" spellcheck="false"></textarea>
       </section>

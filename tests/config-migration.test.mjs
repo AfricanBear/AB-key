@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   CURRENT_CONFIG_VERSION,
   createDefaultConfig,
+  lintConfig,
   migrateConfig,
   validateConfigShape
 } from "../src/shared/config-schema.js";
@@ -65,7 +66,8 @@ test("default hotkeys: Alt+1-5, Alt+E, Alt+S, Alt+A, plus the v7 backlog keys", 
   assert.equal(hotkey(config, "alt+a").actionId, "action.addCreate");
   assert.equal(hotkey(config, "alt+c").actionId, "action.duplicateVariable", "Alt+C is now Duplicate, not Create section");
   assert.equal(action(config, "action.createSection"), undefined);
-  assert.equal(action(config, "action.primary").enabled, false, "submit-anywhere action is off");
+  assert.equal(action(config, "action.primary"), undefined, "no submit-anywhere example action");
+  assert.equal(config.commandBindings, undefined, "no browser command");
 });
 
 test("Alt+E and Alt+A are limited to model pages; Alt+S and Alt+1-5 are global", () => {
@@ -97,8 +99,8 @@ test("v1 -> current: rail becomes positional, user data is kept", () => {
   }
   assert.ok(action(migrated, "action.mine"), "custom action kept");
   assert.ok(hotkey(migrated, "alt+x"), "custom hotkey kept");
-  assert.equal(action(migrated, "action.primary").enabled, false);
-  assert.equal(migrated.commandBindings.run_secondary_action, undefined);
+  assert.equal(action(migrated, "action.primary"), undefined, "unused example action dropped");
+  assert.equal(migrated.commandBindings, undefined);
   assert.equal(hotkey(migrated, "alt+c").actionId, "action.duplicateVariable", "old Alt+C gone, new one bound");
   assert.deepEqual(action(migrated, "action.bulkDimensions"), action(createDefaultConfig(), "action.bulkDimensions"));
   assert.deepEqual(action(migrated, "action.save"), action(createDefaultConfig(), "action.save"));
@@ -291,7 +293,7 @@ test("v8 -> v9: Alt+G added; a user's own Alt+G is left alone", () => {
   const v8 = storedAt(8);
   assert.equal(action(v8, "action.aiDescription"), undefined, "fixture is a real v8 config");
   const migrated = migrateConfig(v8);
-  assert.equal(migrated.configVersion, 9);
+  assert.equal(migrated.configVersion, CURRENT_CONFIG_VERSION);
   assert.equal(hotkey(migrated, "alt+g").actionId, "action.aiDescription");
   assert.deepEqual(action(migrated, "action.aiDescription"), action(createDefaultConfig(), "action.aiDescription"));
   assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
@@ -304,4 +306,70 @@ test("v8 -> v9: Alt+G added; a user's own Alt+G is left alone", () => {
   );
   assert.equal(hotkey(own, "alt+g").actionId, "action.mine", "user's Alt+G kept");
   assert.ok(action(own, "action.aiDescription"), "action exists, just unbound");
+});
+
+// --- v10: the browser command and its example action are gone ------------------------------
+
+const PRIMARY = {
+  actionId: "action.primary",
+  label: "Primary Action",
+  enabled: false,
+  scope: { hosts: ["app.abacum.io"] },
+  locatorProfile: { selectorCandidates: ["button[type='submit']"] },
+  executionPolicy: { timeoutMs: 2500 }
+};
+
+test("v9 -> v10: commandBindings and the unused action.primary are dropped, the rest is kept", () => {
+  const v9 = storedAt(9, (config) => {
+    config.commandBindings = { run_primary_action: "action.primary" };
+    config.actions.unshift(structuredClone(PRIMARY));
+  });
+  const migrated = migrateConfig(v9);
+  assert.equal(migrated.configVersion, 10);
+  assert.equal(migrated.commandBindings, undefined);
+  assert.equal(action(migrated, "action.primary"), undefined);
+  assert.deepEqual(migrated.hotkeys, v9.hotkeys);
+  assert.deepEqual(migrated.actions, v9.actions.slice(1));
+  assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
+});
+
+test("v9 -> v10: action.primary stays when a user hotkey uses it", () => {
+  const migrated = migrateConfig(
+    storedAt(9, (config) => {
+      config.actions.unshift({ ...structuredClone(PRIMARY), enabled: true });
+      config.hotkeys.push({ key: "alt+p", actionId: "action.primary", hosts: ["app.abacum.io"] });
+    })
+  );
+  assert.equal(action(migrated, "action.primary").enabled, true);
+});
+
+// --- lintConfig: hotkeys that cannot fire ---------------------------------------------------
+
+test("lintConfig: shipped defaults have no warnings", () => {
+  assert.deepEqual(lintConfig(createDefaultConfig()), []);
+});
+
+test("lintConfig: unknown action, disabled action, no modifier", () => {
+  const config = createDefaultConfig();
+  config.hotkeys.push({ key: "alt+y", actionId: "action.nope" });
+  config.hotkeys.push({ key: "k", actionId: "action.save" });
+  action(config, "action.academy").enabled = false;
+  const warnings = lintConfig(config);
+  const text = warnings.join("\n");
+  assert.equal(warnings.length, 3, text);
+  assert.match(text, /alt\+h: action "action\.academy" is disabled/);
+  assert.match(text, /alt\+y: action "action\.nope" does not exist/);
+  assert.match(text, /^k: needs Alt, Ctrl or Meta/m);
+});
+
+test("lintConfig: the same key twice warns only where hosts and paths overlap", () => {
+  const config = createDefaultConfig();
+  // alt+e is models-only; the same key on datasets pages does not clash.
+  config.hotkeys.push({ key: "alt+e", actionId: "action.save", hosts: ["app.abacum.io"], paths: ["/app/datasets"] });
+  assert.deepEqual(lintConfig(config), []);
+  // On every page it clashes with the shipped models-only binding, which comes first.
+  config.hotkeys.push({ key: "alt+e", actionId: "action.academy", hosts: ["app.abacum.io"] });
+  const warnings = lintConfig(config);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /alt\+e: bound twice; where both apply, "action\.bulkDimensions" wins and "action\.academy" does not fire/);
 });

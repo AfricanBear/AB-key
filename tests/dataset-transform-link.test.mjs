@@ -160,9 +160,7 @@ test("manifest loads the script on Abacum and Options has the toggle", () => {
   assert.deepEqual(entry.matches, ["*://*.abacum.io/*"]);
   assert.equal(entry.world, undefined);
   assert.match(read("src/options/options.html"), /id="datasetTransformLinkEnabled"/);
-  const js = read("src/options/options.js");
-  assert.match(js, /parsed\.datasetTransformLinkEnabled = datasetTransformLinkToggle\.checked/);
-  assert.match(js, /datasetTransformLinkToggle\.checked = config\.datasetTransformLinkEnabled !== false/);
+  // Toggle id = config flag; the generic wiring is tested in options-groups / options-ux.
 });
 
 test("hover state: a style for the f chip, gated by an attribute on <html> that follows the toggle", async () => {

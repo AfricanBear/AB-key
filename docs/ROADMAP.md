@@ -2,7 +2,8 @@
 
 Planned features not yet shipped. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what is already released.
 
-No feature is planned right now (dimensions in the model builder shipped in v1.6.0).
+No feature is planned right now (dimensions in the model builder shipped in v1.6.0; v1.6.1 fixed
+Import on the Options page, added hotkey warnings on Save and removed the unused browser command).
 
 ---
 

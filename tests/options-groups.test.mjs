@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { createDefaultConfig } from "../src/shared/config-schema.js";
 
 const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const html = read("src/options/options.html");
@@ -44,9 +45,10 @@ test("Every feature toggle sits in exactly one group and none is lost", () => {
   assert.deepEqual([...grouped].sort(), [...all].sort());
   assert.equal(new Set(grouped).size, grouped.length);
 
-  // Every toggle options.js reads is still on the page.
-  const referenced = [...optionsJs.matchAll(/getElementById\("(\w+Enabled)"\)/g)].map((m) => m[1]);
-  assert.deepEqual([...referenced].sort(), [...all].sort());
+  // A toggle's id is the config flag it shows, so each must be a boolean in the defaults.
+  const defaults = createDefaultConfig();
+  for (const id of all) assert.equal(typeof defaults[id], "boolean", `${id} is a config flag`);
+  assert.match(optionsJs, /\.feature-group input\[type="checkbox"\]/);
 });
 
 test("Group titles are styled", () => {

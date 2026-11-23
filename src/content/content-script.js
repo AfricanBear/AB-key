@@ -656,21 +656,4 @@
   }
 
   document.addEventListener("pointerover", onRailPointerOver, true);
-
-  // ---------------------------------------------------------------------------
-  // Messages from the service worker (chrome.commands path)
-  // ---------------------------------------------------------------------------
-
-  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type !== "EXECUTE_ACTION") return false;
-    executeAction(message.payload)
-      .then((result) => sendResponse(result))
-      .catch((error) => {
-        sendResponse({
-          ok: false,
-          error: { code: ErrorCode.RuntimeFailure, message: error.message || "Unexpected execution failure." }
-        });
-      });
-    return true;
-  });
 })();

@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 9;
+export const CURRENT_CONFIG_VERSION = 10;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -298,9 +298,6 @@ export const DEFAULT_CONFIG = {
   datasetTransformLinkEnabled: true,
   unsavedVariableDeleteFixEnabled: true,
   modelDimensionsEnabled: true,
-  commandBindings: {
-    run_primary_action: "action.primary"
-  },
   hotkeys: [
     ...RAIL_POSITIONS.map(buildRailHotkey),
     { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
@@ -311,25 +308,6 @@ export const DEFAULT_CONFIG = {
     ...structuredClone(V9_HOTKEYS)
   ],
   actions: [
-    {
-      // Generic example bound to the browser command. Disabled by default: with scope "*"
-      // it would click submit buttons on any website.
-      actionId: "action.primary",
-      label: "Primary Action",
-      enabled: false,
-      scope: { hosts: [...ABACUM_HOSTS] },
-      locatorProfile: {
-        selectorCandidates: ["button[data-testid='submit']", "button[type='submit']"],
-        textCriteria: { mode: "contains", value: "Submit", caseSensitive: false },
-        ariaCriteria: { label: "Submit", role: "button", caseSensitive: false },
-        indexHint: 0
-      },
-      executionPolicy: {
-        timeoutMs: 2500,
-        retryPolicy: { attempts: 5, intervalMs: 200, useMutationObserver: true },
-        postClickValidation: { strategy: "none" }
-      }
-    },
     ...RAIL_POSITIONS.map(buildRailAction),
     {
       actionId: "action.bulkDimensions",
@@ -542,6 +520,19 @@ function migrateV8ToV9(v8) {
   return next;
 }
 
+// v9 -> v10: the browser command (run_primary_action) is gone, so "commandBindings" is dropped
+// and so is the disabled "Submit" example action, unless a hotkey of the user still uses it.
+const LEGACY_PRIMARY_ACTION_ID = "action.primary";
+
+function migrateV9ToV10(v9) {
+  const next = structuredClone(v9);
+  delete next.commandBindings;
+  const used = (next.hotkeys || []).some((hotkey) => hotkey.actionId === LEGACY_PRIMARY_ACTION_ID);
+  if (!used) next.actions = next.actions.filter((action) => action.actionId !== LEGACY_PRIMARY_ACTION_ID);
+  next.configVersion = 10;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -574,6 +565,9 @@ export function migrateConfig(rawConfig) {
   if (version < 9) {
     next = migrateV8ToV9(next);
   }
+  if (version < 10) {
+    next = migrateV9ToV10(next);
+  }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;
   if (typeof next.darkerModelValuesEnabled !== "boolean") next.darkerModelValuesEnabled = DEFAULT_CONFIG.darkerModelValuesEnabled;
@@ -589,4 +583,53 @@ export function migrateConfig(rawConfig) {
   if (typeof next.diagnosticsEnabled !== "boolean") next.diagnosticsEnabled = DEFAULT_CONFIG.diagnosticsEnabled;
   validateConfigShape(next);
   return next;
+}
+
+// Hotkeys need a modifier: the content script ignores keydown without Alt, Ctrl or Meta.
+const HOTKEY_MODIFIERS = ["alt", "ctrl", "meta"];
+
+function rangesOverlap(a, b) {
+  // No list means "everywhere"; otherwise two prefix lists overlap if one prefix starts the other.
+  if (!Array.isArray(a) || !a.length || !Array.isArray(b) || !b.length) return true;
+  return a.some((x) => b.some((y) => x.startsWith(y) || y.startsWith(x)));
+}
+
+function hostsOverlap(a, b) {
+  const left = a || ["*"];
+  const right = b || ["*"];
+  if (left.includes("*") || right.includes("*")) return true;
+  return left.some((x) => right.some((y) => x === y || x.endsWith(`.${y}`) || y.endsWith(`.${x}`)));
+}
+
+/**
+ * Problems that do not make a config invalid but make a hotkey do nothing.
+ * Pure; returns human-readable warnings for the options page.
+ */
+export function lintConfig(config) {
+  const warnings = [];
+  const hotkeys = config?.hotkeys || [];
+  const actions = new Map((config?.actions || []).map((action) => [action.actionId, action]));
+
+  hotkeys.forEach((hotkey, index) => {
+    const parts = String(hotkey.key).toLowerCase().split("+");
+    if (!parts.some((part) => HOTKEY_MODIFIERS.includes(part))) {
+      warnings.push(`${hotkey.key}: needs Alt, Ctrl or Meta, otherwise it never fires.`);
+    }
+    const action = actions.get(hotkey.actionId);
+    if (!action) {
+      warnings.push(`${hotkey.key}: action "${hotkey.actionId}" does not exist.`);
+    } else if (!action.enabled) {
+      warnings.push(`${hotkey.key}: action "${hotkey.actionId}" is disabled ("enabled": false).`);
+    }
+    const shadowedBy = hotkeys
+      .slice(0, index)
+      .find(
+        (earlier) =>
+          earlier.key === hotkey.key && hostsOverlap(earlier.hosts, hotkey.hosts) && rangesOverlap(earlier.paths, hotkey.paths)
+      );
+    if (shadowedBy) {
+      warnings.push(`${hotkey.key}: bound twice; where both apply, "${shadowedBy.actionId}" wins and "${hotkey.actionId}" does not fire.`);
+    }
+  });
+  return warnings;
 }

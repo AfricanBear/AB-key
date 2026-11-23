@@ -138,10 +138,8 @@ test("config: on by default, kept when the user turns it off, added to old confi
   assert.equal(createDefaultConfig().modelDimensionsEnabled, true);
   assert.equal(migrateConfig(loadV1Config()).modelDimensionsEnabled, true);
   assert.equal(migrateConfig({ ...createDefaultConfig(), modelDimensionsEnabled: false }).modelDimensionsEnabled, false);
-  const js = read("src/options/options.js");
+  // Toggle id = config flag; the generic wiring is tested in options-groups / options-ux.
   assert.match(read("src/options/options.html"), /id="modelDimensionsEnabled"/);
-  assert.match(js, /parsed\.modelDimensionsEnabled = modelDimensionsToggle\.checked/);
-  assert.match(js, /modelDimensionsToggle\.checked = config\.modelDimensionsEnabled !== false/);
 });
 
 test("manifest: page-world part in MAIN without chrome.*, settings part isolated, Abacum only", () => {

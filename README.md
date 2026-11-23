@@ -92,7 +92,8 @@ If a hotkey does nothing:
 
 - Refresh the Abacum tab (content scripts are not added to tabs opened before the install or update).
 - Check that the feature or hotkey is enabled in the extension options.
-- Turn on **Enable diagnostics logging** in the options, retry, and check the console (lines start with `[MV3-AUTO]`).
+- Save the options again: Save warns about hotkeys that cannot fire (missing or disabled action, no Alt/Ctrl/Meta, the same key twice).
+- Turn on **Enable diagnostics logging** in the options, retry, and check the page console at the **Verbose** level (lines start with `[AB-key]`).
 
 ## Tests
 
@@ -114,6 +115,13 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 - `./scripts/package.ps1 -Target opera` — Opera-labeled zip.
 
 ## Releases
+
+### v1.6.1
+
+- **Fix: Import kept the toggles, not the file's flags.** On Save the Options page wrote the toggles over the feature flags in the JSON, so flags from an imported file (or typed into the JSON) were silently replaced. The JSON is now what Save stores: a toggle edits its flag in the JSON, and importing or typing a flag moves its toggle.
+- **Hotkey warnings on Save.** Options warns (and still saves) when a hotkey cannot fire: its action is missing or disabled, it has no Alt/Ctrl/Meta, or an earlier binding takes the same key on the same pages.
+- Options explains the hotkey format (`alt+shift+1`, letters by physical key) and that diagnostics logs show at the console's **Verbose** level, prefixed `[AB-key]`.
+- Removed the unused browser command (`run_primary_action`, never bound) with its disabled "Submit" example action, and the service worker's log in storage that nothing showed. Config migrates to schema v10: `commandBindings` and that action are dropped (the action stays if one of your hotkeys uses it); the old log is deleted on update.
 
 ### v1.6.0
 
