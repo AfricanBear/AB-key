@@ -94,6 +94,11 @@ For Opera-labeled packaging:
 
 ## Releases
 
+### v1.6.0
+
+- **Dimensions in the model builder** (Options → Features → Models, on by default). A third toggle next to "Show formulas" and "Show values", with the right panel's Dimensions icon. When on, every variable shows its dimensions as purple chips under its name (the first three, then "+N" with the full list on hover; "no dimensions" when it has none) and variable rows get taller; off restores Abacum's row height. One switch for all models, remembered in this browser.
+  - The dimensions come from the builder grid's row data (page-world script, like the dataset columns); the extra row height goes through the grid's `getRowHeight` option, so Abacum's row density still applies.
+
 ### v1.5.0
 
 - **Alt+G: AI description** (models). Regenerates the focused variable's description with Abacum's AI: opens the Info panel if needed, then Edit description → AI generate. Abacum replaces the description at once (including a hand-written one) and keeps the change until you press Save; reload without Save to get the old text back. Without a focused variable row nothing happens, so the model's own description is never touched. Config migrates to schema v9: Alt+G is added unless you already use it.

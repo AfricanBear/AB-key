@@ -116,6 +116,7 @@ Shipped in v1.3.0: **f chip selects the column's transformation step** (`src/con
 Shipped in v1.4.0: **Alt+X deletes the focused / ticked variables** (config schema v8, `action.deleteVariable`).
 Shipped in v1.4.1: **Save after deleting a new unnamed variable** (`src/content/abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`).
 Shipped in v1.5.0: **Alt+G regenerates the focused variable's AI description** (config schema v9, `action.aiDescription`).
+Shipped in v1.6.0: **dimensions in the model builder** (`src/content/abacum-model-dimensions.js` + `abacum-model-dimensions-main.js`).
 
 ## Recommended Next Commit Targets
 

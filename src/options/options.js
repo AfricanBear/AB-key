@@ -13,6 +13,7 @@ const datasetTwoRowHeaderToggle = document.getElementById("datasetTwoRowHeaderEn
 const formulaWordDeleteToggle = document.getElementById("formulaWordDeleteEnabled");
 const datasetTransformLinkToggle = document.getElementById("datasetTransformLinkEnabled");
 const unsavedVariableDeleteFixToggle = document.getElementById("unsavedVariableDeleteFixEnabled");
+const modelDimensionsToggle = document.getElementById("modelDimensionsEnabled");
 const DATASET_COLUMNS_KEY = "abKey.datasetColumns"; // keep in sync with src/content/abacum-dataset-columns.js
 const brandLogo = document.getElementById("brandLogo");
 const saveBtn = document.getElementById("saveBtn");
@@ -93,6 +94,7 @@ async function loadConfig() {
   formulaWordDeleteToggle.checked = config.formulaWordDeleteEnabled !== false;
   datasetTransformLinkToggle.checked = config.datasetTransformLinkEnabled !== false;
   unsavedVariableDeleteFixToggle.checked = config.unsavedVariableDeleteFixEnabled !== false;
+  modelDimensionsToggle.checked = config.modelDimensionsEnabled !== false;
   configText.value = JSON.stringify(config, null, 2);
   takeBaseline();
   setStatus("Configuration loaded.");
@@ -111,6 +113,7 @@ async function saveConfig() {
     parsed.formulaWordDeleteEnabled = formulaWordDeleteToggle.checked;
     parsed.datasetTransformLinkEnabled = datasetTransformLinkToggle.checked;
     parsed.unsavedVariableDeleteFixEnabled = unsavedVariableDeleteFixToggle.checked;
+    parsed.modelDimensionsEnabled = modelDimensionsToggle.checked;
     const migrated = migrateConfig(parsed);
     validateConfigShape(migrated);
     await chrome.storage.local.set({ [CONFIG_KEY]: migrated });

@@ -107,6 +107,12 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Focused row: creates "<name> (1)". Delete it afterwards (row menu → Delete variable) and press Save.
   - Ticked rows: uses the bulk "Duplicate (n)" button instead of the row menu.
   - No focused or ticked row: nothing happens.
+- Dimensions toggle (Options → Features → Models, on by default; any model, nothing to save):
+  - A third button after the ƒ and # toggles, with the Dimensions icon of the right panel; off by default.
+  - On: purple chips under each variable name (three, then "+N"; hover shows all), "no dimensions" where empty; variable rows taller, group rows unchanged; Save stays disabled; the right panel does not open.
+  - Scroll down / expand a group: new rows get chips. Change row density: rows stay tall enough.
+  - Off: chips gone, Abacum's row height back. Another model and another tab follow the same switch.
+  - Feature off in Options: no button, no chips.
 - Alt+G (models) — use a test model and do not press Save:
   - Focused row, Info panel closed: Info opens on that variable, a few seconds later the description is replaced, Save becomes active. Reload: the old description is back.
   - Focused row, Info panel already open: same, the panel is not closed.
