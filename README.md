@@ -5,7 +5,8 @@ Chrome (and Opera) Manifest V3 extension that adds hotkeys and small improvement
 Web Store: install it unpacked (see [Install](#install-chrome)).
 
 Click the extension icon on an Abacum page to open the **A+B key** panel with the hotkeys for that
-page. Every feature below can be switched on or off in the extension options.
+page. The ⧉ button next to ⚙️ pops the panel out into its own small window that follows the
+active Abacum tab. Every feature below can be switched on or off in the extension options.
 
 ## Hotkeys
 
@@ -65,8 +66,8 @@ No build step: the files in `src/` are loaded as they are.
   - `ab-key-panel-host.js` — the in-page A+B key panel.
   - `abacum-*.js` — the features above. Files ending in `-main.js` run in the page world
     (`"world": "MAIN"`) where they can reach Abacum's grid and editor objects.
-- `src/background/` — service worker: install / update (config migrations) and opening the panel
-  on icon click.
+- `src/background/` — service worker: install / update (config migrations), opening the panel
+  on icon click and its pop-out window (`detached-window.js`).
 - `src/shared/` — config schema with defaults and migrations, error codes, logger.
 - `src/options/`, `src/popup/` — options page (feature toggles, hotkeys and actions, import /
   export, diagnostics logging) and the hotkey panel.
@@ -115,6 +116,10 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 - `./scripts/package.ps1 -Target opera` — Opera-labeled zip.
 
 ## Releases
+
+### v1.7.0
+
+- **Pop out the hotkey panel.** A ⧉ button next to ⚙️ in the A+B key panel opens it in its own small browser window (no address bar or toolbar, like a password manager's pop-out) and closes the in-page panel. The window follows the active Abacum tab: switching tabs, windows or pages updates the list and the rail / navigation labels for Alt+1–5 and Alt+Shift+1–9; on other sites the last list stays. Hotkeys changed in Options show up at once (in the in-page panel too). A second ⧉ focuses the open window; it reopens where you left it. No new permissions.
 
 ### v1.6.1
 

@@ -3,18 +3,24 @@ import { CONFIG_KEY, isNavActionId, isRailActionId, migrateConfig } from "../sha
 const hotkeyList = document.getElementById("hotkeyList");
 const emptyState = document.getElementById("emptyState");
 const optionsButton = document.getElementById("optionsButton");
+const detachButton = document.getElementById("detachButton");
 
 // Extension version from manifest.json, next to the title.
 const appVersion = document.getElementById("appVersion");
 if (appVersion) appVersion.textContent = `v${chrome.runtime.getManifest().version}`;
 const panelParams = new URLSearchParams(location.search);
-const panelHostname = panelParams.get("host") || "app.abacum.io";
+// Popped out into its own window (src/background/detached-window.js) instead of the in-page iframe.
+const detached = panelParams.get("detached") === "1";
+if (detached) document.documentElement.classList.add("is-detached");
+let panelHostname = panelParams.get("host") || "app.abacum.io";
 // Page path the panel was opened on; null if unknown (then path-scoped hotkeys are shown).
-const panelPathname = panelParams.get("path");
+let panelPathname = panelParams.get("path");
 // Labels of the right toolbar rail on the current page (top to bottom), or null if unknown.
-const railLabels = parseRailLabels(panelParams.get("rail"));
+let railLabels = parseRailLabels(panelParams.get("rail"));
 // Labels of the left navigation links after Library (Alt+Shift+1–9), or null if unknown.
-const navLabels = parseRailLabels(panelParams.get("nav"));
+let navLabels = parseRailLabels(panelParams.get("nav"));
+// Last loaded config, re-rendered when the page context or the config changes.
+let currentConfig = null;
 
 function parseRailLabels(raw) {
   if (!raw) return null;
@@ -88,7 +94,73 @@ function syncPanelHeight() {
   const shell = document.querySelector(".popup-shell");
   if (!shell) return;
   const height = Math.ceil(shell.getBoundingClientRect().height);
+  if (detached) {
+    fitWindowHeight(height);
+    return;
+  }
   window.parent.postMessage({ type: "AB_KEY_PANEL_RESIZE", height }, "*");
+}
+
+// --- Detached window -----------------------------------------------------------------------
+
+let ownWindowId = null;
+let fittedHeight = 0;
+
+/** Grow or shrink the detached window to its content when the list changes. */
+function fitWindowHeight(contentHeight) {
+  if (ownWindowId === null || !contentHeight || contentHeight === fittedHeight) return;
+  fittedHeight = contentHeight;
+  const frame = Math.max(0, window.outerHeight - window.innerHeight);
+  chrome.windows.update(ownWindowId, { height: contentHeight + frame }).catch(() => {});
+}
+
+function contextKey() {
+  return JSON.stringify([panelHostname, panelPathname, railLabels, navLabels]);
+}
+
+function applyContext(context) {
+  const before = contextKey();
+  panelHostname = context.host || panelHostname;
+  panelPathname = typeof context.path === "string" ? context.path : null;
+  railLabels = Array.isArray(context.rail) ? context.rail.map((label) => String(label || "")) : null;
+  navLabels = Array.isArray(context.nav) ? context.nav.map((label) => String(label || "")) : null;
+  if (contextKey() !== before) render();
+}
+
+async function startDetached() {
+  const [{ createLiveContext }, { BOUNDS_KEY }] = await Promise.all([
+    import("./live-context.js"),
+    import("../background/detached-window.js")
+  ]);
+  ownWindowId = (await chrome.windows.getCurrent()).id;
+  // Remember where the window was put and how wide it was.
+  chrome.windows.onBoundsChanged?.addListener((win) => {
+    if (win.id !== ownWindowId) return;
+    chrome.storage.local.set({ [BOUNDS_KEY]: { left: win.left, top: win.top, width: win.width } });
+  });
+  const live = createLiveContext({ ownWindowId, onContext: applyContext });
+  const sourceTab = Number.parseInt(panelParams.get("tab"), 10);
+  await live.start(Number.isInteger(sourceTab) ? sourceTab : undefined);
+  // Rail labels also change without navigation (an object or a side panel opens).
+  setInterval(() => {
+    if (document.visibilityState === "visible") live.refresh();
+  }, 2000);
+  window.addEventListener("focus", () => live.refresh());
+  syncPanelHeight();
+}
+
+async function popOut() {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: "AB_KEY_DETACH_PANEL", search: location.search });
+    if (response?.ok) window.parent.postMessage({ type: "AB_KEY_PANEL_CLOSE" }, "*");
+  } catch {
+    // service worker unavailable; the in-page panel stays open
+  }
+}
+
+function render() {
+  if (!currentConfig) return;
+  renderBindings(currentConfig.hotkeys || [], currentConfig.actions || [], panelHostname, panelPathname);
 }
 
 function renderBindings(hotkeys, actions, hostname, pathname) {
@@ -131,10 +203,20 @@ async function init() {
   optionsButton.addEventListener("click", () => {
     chrome.runtime.openOptionsPage();
   });
+  detachButton?.addEventListener("click", popOut);
 
   const raw = await chrome.storage.local.get(CONFIG_KEY);
-  const config = migrateConfig(raw[CONFIG_KEY]);
-  renderBindings(config.hotkeys || [], config.actions || [], panelHostname, panelPathname);
+  currentConfig = migrateConfig(raw[CONFIG_KEY]);
+  render();
+
+  // Hotkeys edited in Options show up without reopening the panel.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes[CONFIG_KEY]) return;
+    currentConfig = migrateConfig(changes[CONFIG_KEY].newValue);
+    render();
+  });
+
+  if (detached) await startDetached();
 }
 
 init().catch(() => {

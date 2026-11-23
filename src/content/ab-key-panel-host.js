@@ -10,6 +10,21 @@
   let escapeHandler = null;
   let backdropHandler = null;
 
+  // What the panel needs to know about this page. Shared by the in-page panel (URL params) and
+  // the detached window (AB_KEY_PANEL_CONTEXT message), which follows the active Abacum tab.
+  function describeContext() {
+    // Live rail labels, so the panel shows what Alt+1–5 do on this page.
+    const rail = globalThis.AbKeyToolbarRail?.describe();
+    // Same for the left navigation links behind Alt+Shift+1–9.
+    const nav = globalThis.AbKeySidebarNav?.describe();
+    return {
+      host: location.hostname,
+      path: location.pathname,
+      rail: rail ? rail.buttons.map((button) => button.label || "") : null,
+      nav: nav ? nav.map((item) => item.label || "") : null
+    };
+  }
+
   function isOpen() {
     return Boolean(document.getElementById(ROOT_ID));
   }
@@ -53,13 +68,10 @@
 
     const iframe = document.createElement("iframe");
     iframe.className = IFRAME_CLASS;
-    const params = new URLSearchParams({ host: location.hostname, path: location.pathname });
-    // Pass the live rail labels so the panel shows what Alt+1–5 do on this page.
-    const rail = globalThis.AbKeyToolbarRail?.describe();
-    if (rail) params.set("rail", JSON.stringify(rail.buttons.map((button) => button.label || "")));
-    // Same for the left navigation links behind Alt+Shift+1–9.
-    const nav = globalThis.AbKeySidebarNav?.describe();
-    if (nav) params.set("nav", JSON.stringify(nav.map((item) => item.label || "")));
+    const context = describeContext();
+    const params = new URLSearchParams({ host: context.host, path: context.path });
+    if (context.rail) params.set("rail", JSON.stringify(context.rail));
+    if (context.nav) params.set("nav", JSON.stringify(context.nav));
     iframe.src = `${PANEL_URL}?${params.toString()}`;
     iframe.setAttribute("title", "A+B key");
 
@@ -90,13 +102,20 @@
   }
 
   window.addEventListener("message", (event) => {
-    if (event.data?.type !== "AB_KEY_PANEL_RESIZE") return;
+    const type = event.data?.type;
+    if (type !== "AB_KEY_PANEL_RESIZE" && type !== "AB_KEY_PANEL_CLOSE") return;
     const iframe = document.querySelector(`#${ROOT_ID} .${IFRAME_CLASS}`);
     if (!iframe || event.source !== iframe.contentWindow) return;
-    resizePanel(event.data.height);
+    // The panel was popped out into its own window.
+    if (type === "AB_KEY_PANEL_CLOSE") closePanel();
+    else resizePanel(event.data.height);
   });
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type === "AB_KEY_PANEL_CONTEXT") {
+      sendResponse({ ok: true, context: describeContext() });
+      return false;
+    }
     if (message?.type !== "TOGGLE_AB_KEY_PANEL") return false;
     const open = togglePanel();
     sendResponse({ ok: true, open });

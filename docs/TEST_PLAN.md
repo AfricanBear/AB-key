@@ -48,6 +48,14 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Click a single cell: tooltip disappears.
   - Selection reaching the last rendered row while the grid can scroll: "Visible rows only".
   - Models: no AB-key tooltip (Abacum's own one is unchanged). Toggle off in Options: no tooltip.
+- Pop out (⧉ next to ⚙️ in the A+B key panel):
+  - Click ⧉ on a model page: a small window without address bar opens with the same list; the in-page panel closes.
+  - The window has no ⧉ button and fits its height to the list; ⚙️ opens Options.
+  - Switch to a dataset tab, then to a non-Abacum tab, then to another browser window with Abacum: the list follows Abacum tabs (rail labels for Alt+1–5 change), the non-Abacum tab keeps the last list.
+  - Open an object or side panel in Abacum: rail labels in the window update within ~2 s.
+  - Change a hotkey in Options and Save: the window updates without reopening.
+  - Click ⧉ again from another tab: the open window is focused, no second window.
+  - Move / widen the window, close it, pop out again: it opens at the same place and width.
 - Version number: the A+B key panel and the Options page show "A+B key v<manifest version>" in the title.
 - Pin columns in dataset Viewer (dataset → **Viewer** tab):
   - Hover a data column header: a grey pin appears left of the filter button; the service columns (checkbox, status) have none.

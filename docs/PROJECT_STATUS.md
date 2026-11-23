@@ -117,6 +117,7 @@ Shipped in v1.4.0: **Alt+X deletes the focused / ticked variables** (config sche
 Shipped in v1.4.1: **Save after deleting a new unnamed variable** (`src/content/abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`).
 Shipped in v1.5.0: **Alt+G regenerates the focused variable's AI description** (config schema v9, `action.aiDescription`).
 Shipped in v1.6.0: **dimensions in the model builder** (`src/content/abacum-model-dimensions.js` + `abacum-model-dimensions-main.js`).
+Shipped in v1.7.0: **pop-out hotkey panel window** (`src/background/detached-window.js`, `src/popup/live-context.js`).
 Shipped in v1.6.1: **Options JSON is the single source of truth** (toggles mirror its flags, `src/options/config-form.js`), **hotkey warnings on Save** (`lintConfig`), browser command and stored logs removed (config schema v10).
 
 ## Recommended Next Commit Targets
