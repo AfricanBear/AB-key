@@ -114,6 +114,7 @@ Shipped in v0.9.0: **formula hints beside the Cell Editor** (`src/content/abacum
 Shipped in v1.2.0: **Ctrl+Backspace deletes one word in formulas** (`src/content/abacum-formula-keys.js` + `abacum-formula-keys-main.js`).
 Shipped in v1.3.0: **f chip selects the column's transformation step** (`src/content/abacum-dataset-transform-link.js`).
 Shipped in v1.4.0: **Alt+X deletes the focused / ticked variables** (config schema v8, `action.deleteVariable`).
+Shipped in v1.4.1: **Save after deleting a new unnamed variable** (`src/content/abacum-model-save-fix.js` + `abacum-model-save-fix-main.js`).
 
 ## Recommended Next Commit Targets
 
