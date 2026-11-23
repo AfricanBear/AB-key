@@ -93,6 +93,19 @@ body {
   vertical-align: middle;
 }
 
+a.app-version {
+  text-decoration: none;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+a.app-version:hover,
+a.app-version:focus-visible {
+  color: var(--accent-hover, #f0a060);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .subtitle {
   margin: 6px 0 0;
   font-size: 13px;
@@ -186,7 +199,34 @@ textarea::placeholder {
 .feature-toggles {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.feature-group {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.feature-group + .feature-group {
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+}
+
+.feature-group-title {
+  float: left; /* lets the gap below apply: a legend is not a flex item */
+  width: 100%;
+  margin: 0 0 4px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .toggle-preview {
@@ -233,6 +273,48 @@ textarea::placeholder {
 .toggle-row:hover {
   background: var(--row-hover);
   border-color: rgba(186, 168, 230, 0.18);
+}
+
+/* Unsaved changes: accent bar on the left of a changed toggle row. */
+.toggle-row.is-dirty {
+  background: rgba(232, 146, 74, 0.1);
+  border-color: rgba(232, 146, 74, 0.35);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.toggle-row.is-dirty:hover {
+  background: rgba(232, 146, 74, 0.16);
+}
+
+textarea.is-dirty,
+textarea.is-dirty:focus {
+  border-color: rgba(232, 146, 74, 0.7);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Save turns solid with a dot while there are unsaved changes. */
+.btn-primary.has-changes {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1030;
+  font-weight: 600;
+}
+
+.btn-primary.has-changes::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 7px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.btn-primary.has-changes:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #1a1030;
 }
 
 .toggle-row input[type="checkbox"] {

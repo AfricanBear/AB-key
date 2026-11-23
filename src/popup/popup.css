@@ -104,6 +104,19 @@ body {
   vertical-align: middle;
 }
 
+a.app-version {
+  text-decoration: none;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+a.app-version:hover,
+a.app-version:focus-visible {
+  color: var(--accent-hover, #f0a060);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .subtitle {
   margin: 4px 0 0;
   font-size: 11px;

@@ -12,7 +12,7 @@
         <div class="brand">
           <img id="brandLogo" class="brand-logo" alt="A+B key" width="40" height="40" />
           <div class="brand-text">
-            <h1>A+B key <span id="appVersion" class="app-version"></span></h1>
+            <h1>A+B key <a id="appVersion" class="app-version" href="https://github.com/AfricanBear/AB-key/releases" target="_blank" rel="noopener noreferrer" title="Releases on GitHub"></a></h1>
             <p class="subtitle">Configure command bindings and action profiles</p>
           </div>
         </div>
@@ -22,98 +22,110 @@
       <section class="card">
         <h2 class="section-label">Features</h2>
         <div class="feature-toggles">
-          <label class="toggle-row">
-            <input type="checkbox" id="abacumTabTitleEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Abacum: show client name in tab title</span>
-              <span class="toggle-hint">Open Abacum tabs may need a refresh for this to take effect.</span>
-            </span>
-          </label>
-
-          <label class="toggle-row">
-            <input type="checkbox" id="lightThemeNavEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Light theme nav</span>
-              <span class="toggle-hint">Applies to all <code>*.abacum.io</code> pages. Refresh if the nav does not update immediately.</span>
-            </span>
-            <span class="toggle-preview" aria-hidden="true">
-              <figure class="preview-item">
-                <img id="lightNavPreviewDefault" class="preview-img" alt="" width="36" height="36" />
-                <figcaption>Default</figcaption>
-              </figure>
-              <figure class="preview-item">
-                <img id="lightNavPreviewLight" class="preview-img" alt="" width="36" height="36" />
-                <figcaption>Light nav</figcaption>
-              </figure>
-            </span>
-          </label>
-
-          <label class="toggle-row">
-            <input type="checkbox" id="darkerModelValuesEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Darker values in model cells</span>
-              <span class="toggle-hint">Model values use the grid's near-black text instead of Abacum's grey. Applies to open Abacum tabs immediately.</span>
-            </span>
-          </label>
-
-          <label class="toggle-row">
-            <input type="checkbox" id="datasetSelectionSumEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Selection sum in datasets</span>
-              <span class="toggle-hint">Select two or more cells in a dataset Viewer to see the count, Sum and Avg of the numeric values.</span>
-            </span>
-          </label>
-
-          <div class="toggle-row">
-            <input type="checkbox" id="datasetPinColumnsEnabled" />
-            <span class="toggle-body">
-              <label class="toggle-text" id="datasetPinColumnsLabel" for="datasetPinColumnsEnabled">Pin columns in dataset Viewer</label>
-              <span class="toggle-hint">Hover a column header in a dataset Viewer and click the pin to keep the column on the left while scrolling. Pinned columns and column widths are remembered per dataset in this browser only.</span>
-              <span class="toggle-actions">
-                <button type="button" id="resetDatasetColumnsBtn" class="btn btn-toolbar">Reset pinned columns and widths</button>
+          <fieldset class="feature-group">
+            <legend class="feature-group-title">Appearance</legend>
+            <label class="toggle-row">
+              <input type="checkbox" id="abacumTabTitleEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Abacum: show client name in tab title</span>
+                <span class="toggle-hint">Open Abacum tabs may need a refresh for this to take effect.</span>
               </span>
-            </span>
-          </div>
+            </label>
 
-          <label class="toggle-row">
-            <input type="checkbox" id="datasetTwoRowHeaderEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Two-row column headers in dataset Viewer</span>
-              <span class="toggle-hint">Headers are twice as tall: the column name on top, the pin, filter and options buttons below and always visible.</span>
-            </span>
-          </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="lightThemeNavEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Light theme nav</span>
+                <span class="toggle-hint">Applies to all <code>*.abacum.io</code> pages. Refresh if the nav does not update immediately.</span>
+              </span>
+              <span class="toggle-preview" aria-hidden="true">
+                <figure class="preview-item">
+                  <img id="lightNavPreviewDefault" class="preview-img" alt="" width="36" height="36" />
+                  <figcaption>Default</figcaption>
+                </figure>
+                <figure class="preview-item">
+                  <img id="lightNavPreviewLight" class="preview-img" alt="" width="36" height="36" />
+                  <figcaption>Light nav</figcaption>
+                </figure>
+              </span>
+            </label>
 
-          <label class="toggle-row">
-            <input type="checkbox" id="datasetTransformLinkEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Click <span class="fx-chip" aria-label="the f icon">f</span> in a dataset column header to select its transformation</span>
-              <span class="toggle-hint">Abacum shows this icon on columns made by a transformation. With the Transform panel open, clicking it also selects the last step that writes that column. The icon gets a hover state and a tooltip, so it looks clickable.</span>
-            </span>
-          </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="darkerModelValuesEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Darker values in model cells</span>
+                <span class="toggle-hint">Model values use the grid's near-black text instead of Abacum's grey. Applies to open Abacum tabs immediately.</span>
+              </span>
+            </label>
+          </fieldset>
 
-          <label class="toggle-row">
-            <input type="checkbox" id="formulaWordDeleteEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Ctrl+Backspace deletes one word in formulas</span>
-              <span class="toggle-hint">In the formula editor Ctrl+Backspace deletes the word left of the cursor (a variable chip as a whole) instead of clearing the whole formula. On Mac, Cmd+Backspace deletes to the start of the line.</span>
-            </span>
-          </label>
+          <fieldset class="feature-group">
+            <legend class="feature-group-title">Models</legend>
+            <label class="toggle-row">
+              <input type="checkbox" id="formulaWordDeleteEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Ctrl+Backspace deletes one word in formulas</span>
+                <span class="toggle-hint">In the formula editor Ctrl+Backspace deletes the word left of the cursor (a variable chip as a whole) instead of clearing the whole formula. On Mac, Cmd+Backspace deletes to the start of the line.</span>
+              </span>
+            </label>
 
-          <label class="toggle-row">
-            <input type="checkbox" id="unsavedVariableDeleteFixEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Fix Save after deleting a new unnamed variable</span>
-              <span class="toggle-hint">Abacum bug: if you create a variable and delete it before it was ever saved, every Save fails with "Variable marked for deletion does not exist". AB-key drops that phantom deletion from the save request; real deletions are sent as is.</span>
-            </span>
-          </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="unsavedVariableDeleteFixEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Fix Save after deleting a new unnamed variable</span>
+                <span class="toggle-hint">Abacum bug: if you create a variable and delete it before it was ever saved, every Save fails with "Variable marked for deletion does not exist". AB-key drops that phantom deletion from the save request; real deletions are sent as is.</span>
+              </span>
+            </label>
+          </fieldset>
 
-          <label class="toggle-row">
-            <input type="checkbox" id="diagnosticsEnabled" />
-            <span class="toggle-body">
-              <span class="toggle-text">Enable diagnostics logging</span>
-              <span class="toggle-hint">Logs each hotkey lookup to the browser console and outlines the matched element.</span>
-            </span>
-          </label>
+          <fieldset class="feature-group">
+            <legend class="feature-group-title">Datasets</legend>
+            <label class="toggle-row">
+              <input type="checkbox" id="datasetSelectionSumEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Selection sum in datasets</span>
+                <span class="toggle-hint">Select two or more cells in a dataset Viewer to see the count, Sum and Avg of the numeric values.</span>
+              </span>
+            </label>
+
+            <div class="toggle-row">
+              <input type="checkbox" id="datasetPinColumnsEnabled" />
+              <span class="toggle-body">
+                <label class="toggle-text" id="datasetPinColumnsLabel" for="datasetPinColumnsEnabled">Pin columns in dataset Viewer</label>
+                <span class="toggle-hint">Hover a column header in a dataset Viewer and click the pin to keep the column on the left while scrolling. Pinned columns and column widths are remembered per dataset in this browser only.</span>
+                <span class="toggle-actions">
+                  <button type="button" id="resetDatasetColumnsBtn" class="btn btn-toolbar">Reset pinned columns and widths</button>
+                </span>
+              </span>
+            </div>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="datasetTwoRowHeaderEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Two-row column headers in dataset Viewer</span>
+                <span class="toggle-hint">Headers are twice as tall: the column name on top, the pin, filter and options buttons below and always visible.</span>
+              </span>
+            </label>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="datasetTransformLinkEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Click <span class="fx-chip" aria-label="the f icon">f</span> in a dataset column header to select its transformation</span>
+                <span class="toggle-hint">Abacum shows this icon on columns made by a transformation. With the Transform panel open, clicking it also selects the last step that writes that column. The icon gets a hover state and a tooltip, so it looks clickable.</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset class="feature-group">
+            <legend class="feature-group-title">Advanced</legend>
+            <label class="toggle-row">
+              <input type="checkbox" id="diagnosticsEnabled" />
+              <span class="toggle-body">
+                <span class="toggle-text">Enable diagnostics logging</span>
+                <span class="toggle-hint">Logs each hotkey lookup to the browser console and outlines the matched element.</span>
+              </span>
+            </label>
+          </fieldset>
         </div>
       </section>
 
