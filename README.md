@@ -75,7 +75,7 @@ Standalone Chromium Manifest V3 extension for hotkey-triggered click automation 
 Requires Node.js 22+. No dependencies to install.
 
 - `npm test` — runs `tests/*.test.mjs` with the built-in `node --test` runner.
-- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+Shift+1–9 / Alt+E / Alt+S / Alt+A / Alt+Q / Alt+H / Alt+R / Alt+C, rail and navigation tooltip hints, darker model values, the dataset selection sum and formula hint placement.
+- Config migrations (every schema version from v1), hotkey matching (layouts, hosts, model-only paths), locators for Alt+1–5 / Alt+Shift+1–9 / Alt+E / Alt+S / Alt+A / Alt+Q / Alt+H / Alt+R / Alt+C / Alt+X, rail and navigation tooltip hints, darker model values, the dataset selection sum and formula hint placement.
 - The content script runs in `node:vm` against a small fake DOM (`tests/helpers.mjs`); live Abacum behaviour still needs the manual checks in `docs/TEST_PLAN.md`.
 
 CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scripts/package.ps1` on every push to `main` and every pull request.
@@ -93,6 +93,10 @@ For Opera-labeled packaging:
 - `./scripts/package.ps1 -Target opera`
 
 ## Releases
+
+### v1.4.0
+
+- **Alt+X: delete variable** (models). Deletes the variable of the focused row (right-click → Delete variable); if rows are ticked, uses the bulk "Delete (n)" button instead. Abacum applies the deletion on Save (until then a reload brings the variable back) and refuses to delete a variable that other formulas use (it shows which ones). Config migrates to schema v8: Alt+X is added unless you already use it for your own action.
 
 ### v1.3.0
 

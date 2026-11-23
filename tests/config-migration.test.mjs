@@ -22,10 +22,17 @@ const V7_ACTION_IDS = [
   "action.duplicateVariable"
 ];
 
+// Added in schema v8.
+const V8_ACTION_IDS = ["action.deleteVariable"];
+
 /** Stored config as an older version would have left it: migrate v1, then roll back the version. */
 function storedAt(version, mutate = () => {}) {
   const config = migrateConfig(loadV1Config());
   config.configVersion = version;
+  if (version < 8) {
+    config.actions = config.actions.filter((item) => !V8_ACTION_IDS.includes(item.actionId));
+    config.hotkeys = config.hotkeys.filter((item) => !V8_ACTION_IDS.includes(item.actionId));
+  }
   if (version < 7) {
     config.actions = config.actions.filter((item) => !V7_ACTION_IDS.includes(item.actionId));
     config.hotkeys = config.hotkeys.filter((item) => !V7_ACTION_IDS.includes(item.actionId));
@@ -204,7 +211,7 @@ test("v6 -> v7: backlog hotkeys added; a key the user already uses is left alone
   assert.equal(action(v6, "action.aiChat"), undefined, "fixture is a real v6 config");
 
   const migrated = migrateConfig(v6);
-  assert.equal(migrated.configVersion, 7);
+  assert.equal(migrated.configVersion, CURRENT_CONFIG_VERSION);
   assert.equal(hotkey(migrated, "alt+q").actionId, "action.mine", "user's Alt+Q kept");
   assert.equal(migrated.hotkeys.filter((item) => item.key === "alt+q").length, 1);
   assert.ok(action(migrated, "action.aiChat"), "action exists, just unbound");
@@ -214,4 +221,43 @@ test("v6 -> v7: backlog hotkeys added; a key the user already uses is left alone
   assert.equal(hotkey(migrated, "alt+shift+1").actionId, "action.nav1");
   assert.deepEqual(action(migrated, "action.duplicateVariable"), action(createDefaultConfig(), "action.duplicateVariable"));
   assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
+});
+
+// --- v8: Alt+X deletes the variable ---------------------------------------------------------
+
+test("v8 defaults: Alt+X deletes the ticked variables, else the focused one, on model pages only", () => {
+  const config = createDefaultConfig();
+  assert.deepEqual(hotkey(config, "alt+x"), { key: "alt+x", actionId: "action.deleteVariable", hosts: ["app.abacum.io"], paths: ["/app/modules"] });
+  const del = action(config, "action.deleteVariable");
+  assert.equal(del.enabled, true);
+  const [bulk, row] = del.executionPolicy.alternatives;
+  assert.deepEqual(bulk.steps[0].locatorProfile.preferredSelectors, [
+    "[data-testid='model-builder-bulk-actions-toolbar'] button[aria-label='delete-variables']"
+  ]);
+  assert.equal(row.steps[0].trigger, "contextmenu");
+  assert.deepEqual(row.steps[0].locatorProfile.preferredSelectors, [".ag-row.variable-row.ag-row-focus [col-id='name']"]);
+  assert.equal(row.steps[1].locatorProfile.textCriteria.value, "Delete variable");
+  assert.equal(row.steps[1].locatorProfile.textCriteria.mode, "exact");
+  const keys = config.hotkeys.map((item) => item.key);
+  assert.equal(new Set(keys).size, keys.length, "no key bound twice");
+});
+
+test("v7 -> v8: Alt+X added; a user's own Alt+X is left alone", () => {
+  const v7 = storedAt(7);
+  assert.equal(action(v7, "action.deleteVariable"), undefined, "fixture is a real v7 config");
+  const migrated = migrateConfig(v7);
+  assert.equal(migrated.configVersion, 8);
+  assert.equal(hotkey(migrated, "alt+x").actionId, "action.deleteVariable");
+  assert.deepEqual(action(migrated, "action.deleteVariable"), action(createDefaultConfig(), "action.deleteVariable"));
+  assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
+
+  const own = migrateConfig(
+    storedAt(7, (config) => {
+      config.actions.push({ actionId: "action.mine", enabled: true, locatorProfile: { selectorCandidates: ["#x"] }, executionPolicy: {} });
+      config.hotkeys.push({ key: "alt+x", actionId: "action.mine", hosts: ["app.abacum.io"] });
+    })
+  );
+  assert.equal(hotkey(own, "alt+x").actionId, "action.mine", "user's Alt+X kept");
+  assert.equal(own.hotkeys.filter((item) => item.key === "alt+x").length, 1);
+  assert.ok(action(own, "action.deleteVariable"), "action exists, just unbound");
 });

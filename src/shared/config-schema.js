@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 7;
+export const CURRENT_CONFIG_VERSION = 8;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -186,6 +186,25 @@ const DUPLICATE_VARIABLE_ACTION = {
   }
 };
 
+// Alt+X: delete. Abacum applies it on Save (until then a reload brings the variable back) and
+// refuses to delete a variable other formulas use (red toast). Ticked rows win over the focused row.
+const BULK_DELETE = "[data-testid='model-builder-bulk-actions-toolbar'] button[aria-label='delete-variables']";
+const DELETE_VARIABLE_ACTION = {
+  actionId: "action.deleteVariable",
+  label: "Delete variable",
+  enabled: true,
+  scope: { hosts: [...ABACUM_HOSTS] },
+  // Unused while executionPolicy.alternatives is set; kept for the schema (required field).
+  locatorProfile: { preferredSelectors: [BULK_DELETE], preferredOnly: true },
+  executionPolicy: {
+    ...structuredClone(ROW_ACTION_POLICY),
+    alternatives: [
+      { steps: [{ locatorProfile: { preferredSelectors: [BULK_DELETE], preferredOnly: true } }] },
+      { steps: rowMenuSteps("Delete variable") }
+    ]
+  }
+};
+
 const ACADEMY_ACTION = {
   actionId: "action.academy",
   label: "Abacum Academy",
@@ -216,6 +235,10 @@ const V7_HOTKEYS = [
   { key: "alt+c", actionId: "action.duplicateVariable", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }
 ];
 
+// Added in schema v8.
+const V8_ACTIONS = [DELETE_VARIABLE_ACTION];
+const V8_HOTKEYS = [{ key: "alt+x", actionId: "action.deleteVariable", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] }];
+
 export const DEFAULT_CONFIG = {
   configVersion: CURRENT_CONFIG_VERSION,
   diagnosticsEnabled: false,
@@ -235,7 +258,8 @@ export const DEFAULT_CONFIG = {
     { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
     { key: "alt+s", actionId: "action.save", hosts: [...ABACUM_HOSTS] },
     { key: "alt+a", actionId: "action.addCreate", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
-    ...structuredClone(V7_HOTKEYS)
+    ...structuredClone(V7_HOTKEYS),
+    ...structuredClone(V8_HOTKEYS)
   ],
   actions: [
     {
@@ -293,7 +317,8 @@ export const DEFAULT_CONFIG = {
         steps: structuredClone(ADD_CREATE_STEPS)
       }
     },
-    ...structuredClone(V7_ACTIONS)
+    ...structuredClone(V7_ACTIONS),
+    ...structuredClone(V8_ACTIONS)
   ]
 };
 
@@ -438,6 +463,21 @@ function migrateV6ToV7(v6) {
   return next;
 }
 
+// v7 -> v8: Alt+X deletes the focused (or ticked) variables. The action is added if missing;
+// the hotkey only if the user has nothing on alt+x.
+function migrateV7ToV8(v7) {
+  const next = structuredClone(v7);
+  next.hotkeys = next.hotkeys || [];
+  for (const action of V8_ACTIONS) {
+    if (!next.actions.some((item) => item.actionId === action.actionId)) next.actions.push(structuredClone(action));
+  }
+  for (const hotkey of V8_HOTKEYS) {
+    if (!next.hotkeys.some((item) => item.key === hotkey.key)) next.hotkeys.push(structuredClone(hotkey));
+  }
+  next.configVersion = 8;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -463,6 +503,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 7) {
     next = migrateV6ToV7(next);
+  }
+  if (version < 8) {
+    next = migrateV7ToV8(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;
