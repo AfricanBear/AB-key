@@ -19,6 +19,19 @@ for (const page of ["options", "popup"]) {
   });
 }
 
+// --- Sticky header ------------------------------------------------------------
+
+test("Options: the header with Save stays on top while scrolling", () => {
+  const css = read("src/options/options.css");
+  const header = css.match(/\.page-header \{[^}]*\}/);
+  assert.ok(header, ".page-header rule");
+  assert.match(header[0], /position: sticky;/);
+  assert.match(header[0], /top: 0;/);
+  assert.match(header[0], /z-index: \d+;/);
+  assert.match(header[0], /background: /, "opaque, so cards do not show through");
+  assert.match(read("src/options/options.html"), /<header class="page-header">[\s\S]*?id="saveBtn"[\s\S]*?<\/header>/);
+});
+
 // --- Unsaved changes --------------------------------------------------------
 
 const BASE = { toggles: { a: true, b: false, c: true }, json: '{\n  "x": 1\n}' };

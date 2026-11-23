@@ -37,16 +37,23 @@ body {
 .page {
   max-width: 920px;
   margin: 0 auto;
-  padding: 28px 24px 32px;
+  padding: 14px 24px 32px;
 }
 
+/* Sticky: Save stays in reach on a long page. Opaque so cards do not show through. */
 .page-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding-bottom: 14px;
+  margin: 0 -24px 20px;
+  padding: 14px 24px;
+  background: rgba(30, 19, 52, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(186, 168, 230, 0.22);
 }
 
