@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AB-key",
   "version": "1.6.0",
-  "description": "Hotkey-based click automation for complex and dynamic elements.",
+  "description": "Hotkeys and small improvements for Abacum (app.abacum.io).",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["*://*.abacum.io/*"],
   "background": {
