@@ -2,7 +2,7 @@
 
 Planned features not yet shipped. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what is already released.
 
-No feature is planned right now (v1.8.1 documented opening a terminal in the AB-key folder; v1.8.0 added the guide with tips at the buttons; v1.7.2 made Alt+R double-click the variable name; v1.7.1 added the "+N" dimensions popup; v1.7.0 added the pop-out window for the hotkey panel; v1.6.1
+No feature is planned right now (v1.8.2 lets update.ps1 download the latest release; v1.8.1 documented opening a terminal in the AB-key folder; v1.8.0 added the guide with tips at the buttons; v1.7.2 made Alt+R double-click the variable name; v1.7.1 added the "+N" dimensions popup; v1.7.0 added the pop-out window for the hotkey panel; v1.6.1
 fixed Import on the Options page, added hotkey warnings on Save and removed the unused browser command).
 
 ---

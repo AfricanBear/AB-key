@@ -81,11 +81,25 @@ No build step: the files in `src/` are loaded as they are.
 
 More in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+## Get the files
+
+Put AB-key into a **permanent folder** first, e.g. `C:\Users\<you>\AB-key`. The browser keeps
+AB-key's settings for that folder only: moving, renaming or deleting it later starts from default
+settings. Do not leave it in Downloads.
+
+- **With git:** `git clone https://github.com/AfricanBear/AB-key.git "$HOME\AB-key"`. Updates are a
+  `git pull` (see [Update](#update)).
+- **Without git:** on the [latest release](https://github.com/AfricanBear/AB-key/releases/latest)
+  download **Source code (zip)** and unpack it into the permanent folder. The zip holds one folder
+  (`AB-key-1.8.2\` and so on): the extension folder is the one with `manifest.json` in it, so move
+  that folder's contents up or pick the inner folder in **Load unpacked**. Updates are one command
+  (see [Update](#update)).
+
 ## Install (Chrome)
 
 1. Open `chrome://extensions`.
 2. Turn on **Developer mode** (toggle in the top-right corner). This is required: the **Load unpacked** button only appears in Developer mode.
-3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
+3. Click **Load unpacked** and select the AB-key folder (the one that contains `manifest.json`).
 4. Open an Abacum page and click the extension icon to see the hotkeys for that page.
 5. To update, see [Update](#update): keep the same folder and click **Reload**.
 
@@ -93,7 +107,7 @@ More in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 1. Open `opera://extensions`.
 2. Turn on **Developer mode** — required for **Load unpacked**, same as in Chrome.
-3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
+3. Click **Load unpacked** and select the AB-key folder (the one that contains `manifest.json`).
 4. Open an Abacum page and try a hotkey, e.g. Alt+1.
 5. To update, see [Update](#update).
 
@@ -114,6 +128,9 @@ which tips were already shown).
 > of an unpacked extension comes from its folder path, so either way the browser sees a new
 > extension with default settings, and the guide starts over.
 
+Which way applies: run `git status` in the AB-key folder. If it says
+`fatal: not a git repository`, AB-key was installed from a zip: use **From a zip**.
+
 **From a git checkout:**
 
 1. Open a terminal in the AB-key folder (see below) and run `git pull`.
@@ -131,33 +148,54 @@ AB-key card (with Developer mode on).
 
 ![Right-click an empty spot in the AB-key folder → App extensions → Open in Terminal](docs/images/open-terminal-in-folder.png)
 
-The terminal opens with that folder as the current one; type `git pull` and press Enter.
+The terminal opens with that folder as the current one; type the command (`git pull`, or the
+`update.ps1` line below) and press Enter.
 
 Other ways: in File Explorer click the address bar, type `powershell` and press Enter; or in any
 terminal go to the folder first, e.g. `cd "$HOME\AB-key"` (use your own path).
 
-**From a zip** (`AB-key.zip` / `AB-key-opera.zip`, built by `scripts/package.ps1`):
+**From a zip** (installed from a release's **Source code (zip)**):
 
-1. Download the new zip; there is no need to unpack it.
-2. In the folder AB-key is loaded from, run in PowerShell:
+1. Open a terminal in the AB-key folder (see above) and run:
 
    ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\update.ps1 -Zip "$HOME\Downloads\AB-key.zip"
+   powershell -ExecutionPolicy Bypass -File scripts\update.ps1
    ```
 
-   The script checks that the zip is AB-key, replaces `manifest.json`, `src\` and `assets\` in that
-   folder (and `README.md` and itself), leaves everything else alone and prints the old and new
-   version. Add `-Target "<folder>"` to update another folder. It refuses a git checkout: use
-   `git pull` there.
-3. `chrome://extensions` → **Reload** on the AB-key card, then refresh open Abacum tabs.
+   The script downloads the latest release from GitHub, checks that it is AB-key, replaces
+   `manifest.json`, `src\` and `assets\` in that folder (and `README.md` and itself), leaves
+   everything else alone and prints the old and new version. If AB-key is already up to date it
+   says so and changes nothing.
+2. `chrome://extensions` → **Reload** on the AB-key card, then refresh open Abacum tabs.
 
-A zip install older than v1.8.0 has no `scripts\update.ps1`. Either unpack the new zip over the old
-folder by hand (replace the files when asked) and click Reload, or run the script from the new
-zip with `-Target`:
+Options of `update.ps1`:
+
+- `-Version 1.8.2` installs that release instead of the latest one.
+- `-Zip "<file>"` uses a zip you already have (e.g. no internet access to GitHub from PowerShell):
+  a release's **Source code (zip)**, or `AB-key.zip` built by `scripts/package.ps1`.
+- `-Target "<folder>"` updates another folder than the one the script is in.
+- `-Force` reinstalls even if the folder already has that version.
+- It refuses a git checkout: use `git pull` there.
+
+**Older zip installs.** v1.8.0 and v1.8.1 have an `update.ps1` that needs `-Zip`; installs older
+than v1.8.0 have none. Update them once with the script of the new release; after that the short
+command above works. In PowerShell, one line at a time (put your AB-key folder in the last one,
+the folder with `manifest.json`):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File "<new zip unpacked>\scripts\update.ps1" -Zip "$HOME\Downloads\AB-key.zip" -Target "<AB-key folder>"
+Invoke-WebRequest "https://github.com/AfricanBear/AB-key/archive/refs/heads/main.zip" -OutFile "$HOME\Downloads\AB-key-main.zip"
 ```
+
+```powershell
+Expand-Archive -Force "$HOME\Downloads\AB-key-main.zip" "$HOME\Downloads\AB-key-main"
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "$HOME\Downloads\AB-key-main\AB-key-main\scripts\update.ps1" -Target "<your AB-key folder>"
+```
+
+Then click **Reload**; the two downloaded items in Downloads can be deleted. (Unpacking a new zip
+over the old folder by hand and clicking Reload works too.)
 
 If you must reinstall anyway: Options → Advanced → Configuration → **Export** before, then
 **Import** and **Save** after. That file has the hotkeys and toggles, including "Only new
@@ -183,6 +221,11 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 - `./scripts/package.ps1 -Target opera` — Opera-labeled zip.
 
 ## Releases
+
+### v1.8.2
+
+- **Update a zip install with one command.** `scripts\update.ps1` without `-Zip` downloads the latest GitHub release itself and does nothing when AB-key is already up to date; `-Version` picks a release, `-Force` reinstalls. `-Zip` still uses a file you have. Installs of v1.8.1 and older need one update with the new script first (README → Update → Older zip installs).
+- README: **Get the files** (a permanent folder, git or the release zip, which folder to pick in Load unpacked), and how to tell a git install from a zip install (`fatal: not a git repository`).
 
 ### v1.8.1
 
