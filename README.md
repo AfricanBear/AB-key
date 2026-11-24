@@ -9,6 +9,12 @@ page. The ⧉ button next to ⚙️ pops the panel out into its own small window
 active Abacum tab; the ? button shows the guide tips of the page again. Every feature below can be
 switched on or off in the extension options.
 
+![AB-key in an Abacum model: the A+B key panel, dimension chips under variable names and formula hints beside the Cell Editor](docs/images/overview.png)
+
+1. The **A+B key** panel with the hotkeys of the current page.
+2. Dimensions toggle: the variable's dimensions shown as chips under its name.
+3. Formula autocomplete opens beside the Cell Editor, so the formula stays visible.
+
 ## Hotkeys
 
 Hotkeys are handled inside the Abacum page, so they are not listed in `chrome://extensions/shortcuts`.
@@ -56,6 +62,13 @@ Hovering a toolbar button or a navigation link shows its hotkey in the tooltip.
 - Pin data columns in the Viewer.
 - Two-row column headers in the Viewer.
 - Clicking the f chip in a transformed column's header selects its transformation step.
+
+![Dataset Viewer with AB-key: selection sum, pinned columns, two-row headers and the f chip of a transformed column](docs/images/dataset-viewer.png)
+
+1. Sum, count and average of the selected cells.
+2. Pinned columns: the pin button in the header (blue when pinned).
+3. Two-row headers: the column name on top, its buttons below.
+4. The f chip of a transformed column: a click selects its step in the Transform panel.
 
 Details for each feature are in [Releases](#releases).
 
