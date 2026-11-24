@@ -9,6 +9,12 @@ page. The ⧉ button next to ⚙️ pops the panel out into its own small window
 active Abacum tab; the ? button shows the guide tips of the page again. Every feature below can be
 switched on or off in the extension options.
 
+![AB-key in an Abacum model: the A+B key panel, dimension chips under variable names and formula hints beside the Cell Editor](docs/images/overview.png)
+
+1. The **A+B key** panel with the hotkeys of the current page.
+2. Dimensions toggle: the variable's dimensions shown as chips under its name.
+3. Formula autocomplete opens beside the Cell Editor, so the formula stays visible.
+
 ## Hotkeys
 
 Hotkeys are handled inside the Abacum page, so they are not listed in `chrome://extensions/shortcuts`.
