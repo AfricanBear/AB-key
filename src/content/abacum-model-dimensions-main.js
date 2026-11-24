@@ -8,8 +8,8 @@
 // - A third toggle button is cloned from "Show Builder Values" (same MUI classes, aria-pressed)
 //   and placed right after it, with the icon of the right rail's Dimensions button. A click asks
 //   the isolated script (TOGGLE_EVENT) to flip the shared shown / hidden switch.
-// - Shown: purple chips under the name of every variable row (first MAX_CHIPS, then "+N" with the
-//   full list in the tooltip; "no dimensions" when empty). Variable rows get EXTRA_PX more height
+// - Shown: purple chips under the name of every variable row (first MAX_CHIPS, then "+N"; hovering
+//   "+N" pops up the rest, one per line; "no dimensions" when empty). Variable rows get EXTRA_PX more height
 //   through the grid's getRowHeight option (Abacum sets only rowHeight, so its density still
 //   applies); hidden restores Abacum's option and removes the chips.
 // - The state comes from the data-ab-key-model-dims attribute on <html> (see
@@ -28,6 +28,8 @@
   const CHIPS_CLASS = "ab-key-model-dims";
   const CELL_CLASS = "ab-key-model-dims-cell";
   const STYLE_ID = "ab-key-model-dims-style";
+  const MORE_CLASS = "ab-key-more";
+  const POPUP_CLASS = "ab-key-model-dims-popup";
   const MAX_CHIPS = 3;
   const EXTRA_PX = 22;
   const MAX_FIBER_DEPTH = 40;
@@ -38,13 +40,13 @@
 
   // --- Pure helpers (exported for tests) -------------------------------------------------------
 
-  /** What to draw for a dimensions list: up to max chips, the rest as "+N" with a full title. */
+  /** What to draw for a dimensions list: up to max chips, the rest as "+N" with a hover popup. */
   function chipModel(dimensions, max = MAX_CHIPS) {
     const names = Array.isArray(dimensions) ? dimensions.filter((name) => typeof name === "string" && name) : [];
     return {
       shown: names.slice(0, max),
+      hidden: names.slice(max),
       more: Math.max(0, names.length - max),
-      title: names.join(", "),
       empty: names.length === 0
     };
   }
@@ -136,27 +138,84 @@
       `.${CHIPS_CLASS} span{font-size:11px;padding:0 6px;border-radius:9px;white-space:nowrap;` +
       `background:#EEEDFE;color:#3C3489}` +
       `.${CHIPS_CLASS} .ab-key-more{background:transparent;color:#534AB7;padding:0 2px}` +
-      `.${CHIPS_CLASS} .ab-key-none{background:transparent;color:#888780;padding:0}`;
+      `.${CHIPS_CLASS} .ab-key-none{background:transparent;color:#888780;padding:0}` +
+      `.${CHIPS_CLASS} .${MORE_CLASS}{cursor:default}` +
+      // Popup for "+N": looks like Abacum's MUI tooltips, lives in <body> (the cell clips).
+      `.${POPUP_CLASS}{position:fixed;z-index:1500;pointer-events:none;max-width:320px;` +
+      `background:rgba(97,97,97,.95);color:#fff;font-size:11px;line-height:16px;padding:4px 8px;` +
+      `border-radius:4px;font-family:inherit;box-shadow:0 2px 6px rgba(0,0,0,.2)}` +
+      `.${POPUP_CLASS} div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}`;
     document.head.appendChild(style);
   }
 
   function chipsElement(model) {
     const box = document.createElement("div");
     box.className = CHIPS_CLASS;
-    if (model.title) box.title = model.title;
     const add = (text, cls) => {
       const span = document.createElement("span");
       span.textContent = text;
       if (cls) span.className = cls;
       box.appendChild(span);
+      return span;
     };
     if (model.empty) add("no dimensions", "ab-key-none");
-    for (const name of model.shown) add(name);
-    if (model.more) add(`+${model.more}`, "ab-key-more");
+    for (const name of model.shown) add(name).title = name;
+    if (model.more) add(`+${model.more}`, MORE_CLASS).dataset.names = JSON.stringify(model.hidden);
     return box;
   }
 
+  // --- "+N" popup -----------------------------------------------------------------------------
+
+  function hidePopup() {
+    for (const el of document.querySelectorAll(`.${POPUP_CLASS}`)) el.remove();
+  }
+
+  /** Shows the dimensions hidden behind a "+N" chip right under it (above if no room below). */
+  function showPopup(more) {
+    hidePopup();
+    let names = [];
+    try {
+      names = JSON.parse(more.dataset.names || "[]");
+    } catch {
+      return null;
+    }
+    if (!Array.isArray(names) || !names.length || !document.body) return null;
+    const popup = document.createElement("div");
+    popup.className = POPUP_CLASS;
+    popup.setAttribute("role", "tooltip");
+    for (const name of names) {
+      const line = document.createElement("div");
+      line.textContent = name;
+      popup.appendChild(line);
+    }
+    document.body.appendChild(popup);
+    const anchor = more.getBoundingClientRect();
+    const size = popup.getBoundingClientRect();
+    const viewWidth = document.documentElement.clientWidth || 0;
+    const viewHeight = document.documentElement.clientHeight || 0;
+    const below = anchor.bottom + 4;
+    const top = below + size.height > viewHeight && anchor.top - 4 - size.height >= 0 ? anchor.top - 4 - size.height : below;
+    const left = Math.max(4, Math.min(anchor.left, viewWidth - size.width - 4));
+    popup.style.top = `${Math.round(top)}px`;
+    popup.style.left = `${Math.round(left)}px`;
+    return popup;
+  }
+
+  const moreChipOf = (target) =>
+    target && typeof target.closest === "function" ? target.closest(`.${CHIPS_CLASS} .${MORE_CLASS}`) : null;
+
+  document.addEventListener("mouseover", (event) => {
+    const more = moreChipOf(event.target);
+    if (more && !moreChipOf(event.relatedTarget)) showPopup(more);
+  });
+  document.addEventListener("mouseout", (event) => {
+    if (moreChipOf(event.target) && !moreChipOf(event.relatedTarget)) hidePopup();
+  });
+  // The grid scrolls under a still mouse: the popup would float away from its chip.
+  document.addEventListener("scroll", hidePopup, true);
+
   function removeChips() {
+    hidePopup();
     for (const el of document.querySelectorAll(`.${CHIPS_CLASS}`)) el.remove();
     for (const el of document.querySelectorAll(`.${CELL_CLASS}`)) el.classList.remove(CELL_CLASS);
   }
@@ -250,10 +309,10 @@
   }
 
   const observer = new MutationObserver((records) => {
-    // Our own chips and button changes do not need another pass.
+    // Our own chips, popup and button changes do not need another pass.
     const ours = records.every((record) =>
       [...record.addedNodes, ...record.removedNodes].every(
-        (node) => node.nodeType === 1 && (node.classList.contains(CHIPS_CLASS) || node.hasAttribute(BUTTON_MARK))
+        (node) => node.nodeType === 1 && (node.classList.contains(CHIPS_CLASS) || node.classList.contains(POPUP_CLASS) || node.hasAttribute(BUTTON_MARK))
       )
     );
     if (!ours || records.some((record) => record.type === "attributes")) schedule();
@@ -262,5 +321,5 @@
   if (document.body) observer.observe(document.body, { childList: true, subtree: true });
   schedule();
 
-  globalThis.AbKeyModelDimensionsMain = { chipModel, rowHeightFor, isVariableData, EXTRA_PX, MAX_CHIPS, ATTR, TOGGLE_EVENT };
+  globalThis.AbKeyModelDimensionsMain = { chipModel, showPopup, hidePopup, rowHeightFor, isVariableData, EXTRA_PX, MAX_CHIPS, ATTR, TOGGLE_EVENT };
 })();

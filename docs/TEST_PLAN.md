@@ -116,7 +116,7 @@ When changing the config schema, add a migration test to `tests/config-migration
   - No focused or ticked row: nothing happens.
 - Dimensions toggle (Options → Features → Models, on by default; any model, nothing to save):
   - A third button after the ƒ and # toggles, with the Dimensions icon of the right panel; off by default.
-  - On: purple chips under each variable name (three, then "+N"; hover shows all), "no dimensions" where empty; variable rows taller, group rows unchanged; Save stays disabled; the right panel does not open.
+  - On: purple chips under each variable name (three, then "+N"; hovering "+N" pops up the hidden ones at once, one per line, below it or above near the window bottom; scrolling the grid hides it), "no dimensions" where empty; variable rows taller, group rows unchanged; Save stays disabled; the right panel does not open.
   - Scroll down / expand a group: new rows get chips. Change row density: rows stay tall enough.
   - Off: chips gone, Abacum's row height back. Another model and another tab follow the same switch.
   - Feature off in Options: no button, no chips.

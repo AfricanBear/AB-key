@@ -117,6 +117,10 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 
 ## Releases
 
+### v1.7.1
+
+- **Dimensions toggle: "+N" shows the rest on hover.** A variable with more than three dimensions shows "+N" after the first three chips; hovering it now pops up the hidden dimensions at once, one per line, in the style of Abacum's tooltips (it used to be the browser's slow tooltip with the whole list). A shown chip cut off by a narrow column shows its full name on hover.
+
 ### v1.7.0
 
 - **Pop out the hotkey panel.** A ⧉ button next to ⚙️ in the A+B key panel opens it in its own small browser window (no address bar or toolbar, like a password manager's pop-out) and closes the in-page panel. The window follows the active Abacum tab: switching tabs, windows or pages updates the list and the rail / navigation labels for Alt+1–5 and Alt+Shift+1–9; on other sites the last list stays. Hotkeys changed in Options show up at once (in the in-page panel too). A second ⧉ focuses the open window; it reopens where you left it. No new permissions.
