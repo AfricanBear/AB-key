@@ -9,6 +9,9 @@ answer in Russian; code, commits, PRs and repo docs are in English.
 - `npm test` — all tests (`node --test`, Node 22+, no dependencies). Run before every commit.
 - `powershell -ExecutionPolicy Bypass -File scripts/validate.ps1` — manifest checks (referenced files exist, no ES modules in content scripts).
 - `powershell -ExecutionPolicy Bypass -File scripts/package.ps1 [-Target opera]` — zip into `dist/` (git-ignored).
+- `scripts/update.ps1 -Zip <zip> [-Target <folder>]` — updates a zip install in place (shipped in the zip).
+  An unpacked extension's ID comes from its folder path: another folder or Remove + Load unpacked
+  means empty storage (defaults, guide restarts). Keep the folder and press Reload.
 - CI (`.github/workflows/ci.yml`) runs validate + tests + package on every PR and push to `main` (~30 s).
 
 ## Layout
@@ -20,6 +23,10 @@ answer in Russian; code, commits, PRs and repo docs are in English.
   - `toolbar-rail.js` — right toolbar buttons by position (`globalThis.AbKeyToolbarRail`).
   - `sidebar-nav.js` — left navigation links after Library by position (`globalThis.AbKeySidebarNav`).
   - `ab-key-panel-host.js` — in-page A+B key panel (iframe of `src/popup/popup.html`).
+  - `ab-key-guide.js` + `ab-key-guide-steps.js` — guide tips at buttons (`globalThis.AbKeyGuide`).
+    Shown tips are in `chrome.storage.local["abKey.guide"]` (`seen`, `baseline` version; see
+    `src/shared/guide-state.js`), not in the config. A new feature with a button gets a step with
+    `since` = its release version. Replay: `AB_KEY_GUIDE_REPLAY` (panel's ? button).
   - `abacum-*.js` — tab title, light nav, darker model values, dataset selection sum, formula hints,
     dataset pinned columns (`abacum-dataset-columns.js` + `abacum-dataset-columns-main.js`),
     formula word delete (`abacum-formula-keys.js` + `abacum-formula-keys-main.js`), f chip → transformation

@@ -6,7 +6,8 @@ Web Store: install it unpacked (see [Install](#install-chrome)).
 
 Click the extension icon on an Abacum page to open the **A+B key** panel with the hotkeys for that
 page. The ⧉ button next to ⚙️ pops the panel out into its own small window that follows the
-active Abacum tab. Every feature below can be switched on or off in the extension options.
+active Abacum tab; the ? button shows the guide tips of the page again. Every feature below can be
+switched on or off in the extension options.
 
 ## Hotkeys
 
@@ -30,6 +31,11 @@ They also work with a Russian keyboard layout.
 Hovering a toolbar button or a navigation link shows its hotkey in the tooltip.
 
 ## Features
+
+**Guide**
+
+- Tips at the buttons: the first time a page has AB-key hotkeys or features, a short tour points
+  at each of them. "Only new features" limits it to features added after the version you started with.
 
 **Appearance**
 
@@ -64,6 +70,7 @@ No build step: the files in `src/` are loaded as they are.
   - `toolbar-rail.js`, `sidebar-nav.js` — find the right toolbar buttons and left navigation links
     by position.
   - `ab-key-panel-host.js` — the in-page A+B key panel.
+  - `ab-key-guide.js`, `ab-key-guide-steps.js` — the guide: tips at the buttons and their list.
   - `abacum-*.js` — the features above. Files ending in `-main.js` run in the page world
     (`"world": "MAIN"`) where they can reach Abacum's grid and editor objects.
 - `src/background/` — service worker: install / update (config migrations), opening the panel
@@ -80,7 +87,7 @@ More in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 2. Turn on **Developer mode** (toggle in the top-right corner). This is required: the **Load unpacked** button only appears in Developer mode.
 3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
 4. Open an Abacum page and click the extension icon to see the hotkeys for that page.
-5. To update: `git pull`, then click **Reload** on the AB-key card in `chrome://extensions` and refresh open Abacum tabs.
+5. To update, see [Update](#update): keep the same folder and click **Reload**.
 
 ## Install (Opera)
 
@@ -88,6 +95,7 @@ More in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 2. Turn on **Developer mode** — required for **Load unpacked**, same as in Chrome.
 3. Click **Load unpacked** and select this folder (the one that contains `manifest.json`).
 4. Open an Abacum page and try a hotkey, e.g. Alt+1.
+5. To update, see [Update](#update).
 
 If a hotkey does nothing:
 
@@ -95,6 +103,49 @@ If a hotkey does nothing:
 - Check that the feature or hotkey is enabled in the extension options.
 - Save the options again: Save warns about hotkeys that cannot fire (missing or disabled action, no Alt/Ctrl/Meta, the same key twice).
 - Turn on **Enable diagnostics logging** in the options, retry, and check the page console at the **Verbose** level (lines start with `[AB-key]`).
+
+## Update
+
+Update AB-key **in the folder it was loaded from** and click **Reload**: then the browser keeps all
+its settings — hotkeys, feature toggles, pinned columns and the guide ("Only new features" and
+which tips were already shown).
+
+> Do not **Remove** AB-key and do not **Load unpacked** a new version from another folder. The ID
+> of an unpacked extension comes from its folder path, so either way the browser sees a new
+> extension with default settings, and the guide starts over.
+
+**From a git checkout:**
+
+1. `git pull` in the AB-key folder.
+2. `chrome://extensions` (or `opera://extensions`) → **Reload** on the AB-key card.
+3. Refresh open Abacum tabs.
+
+**From a zip** (`AB-key.zip` / `AB-key-opera.zip`, built by `scripts/package.ps1`):
+
+1. Download the new zip; there is no need to unpack it.
+2. In the folder AB-key is loaded from, run in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\update.ps1 -Zip "$HOME\Downloads\AB-key.zip"
+   ```
+
+   The script checks that the zip is AB-key, replaces `manifest.json`, `src\` and `assets\` in that
+   folder (and `README.md` and itself), leaves everything else alone and prints the old and new
+   version. Add `-Target "<folder>"` to update another folder. It refuses a git checkout: use
+   `git pull` there.
+3. `chrome://extensions` → **Reload** on the AB-key card, then refresh open Abacum tabs.
+
+A zip install older than v1.8.0 has no `scripts\update.ps1`. Either unpack the new zip over the old
+folder by hand (replace the files when asked) and click Reload, or run the script from the new
+zip with `-Target`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "<new zip unpacked>\scripts\update.ps1" -Zip "$HOME\Downloads\AB-key.zip" -Target "<AB-key folder>"
+```
+
+If you must reinstall anyway: Options → Advanced → Configuration → **Export** before, then
+**Import** and **Save** after. That file has the hotkeys and toggles, including "Only new
+features"; the list of tips already shown is not in it.
 
 ## Tests
 
@@ -116,6 +167,14 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 - `./scripts/package.ps1 -Target opera` — Opera-labeled zip.
 
 ## Releases
+
+### v1.8.0
+
+- **Guide: tips at the buttons** (Options → Guide, on by default). The first time an Abacum page has AB-key hotkeys or features, a short tour points at each of them with a tip: the left navigation (Alt+Shift+1–9), the right toolbar (Alt+1–5), AI chat, Academy, Save, the variable row hotkeys, the Dimensions toggle, Edit dimensions and Ctrl+Backspace in formulas on models; pinning, selection sum and the f chip on datasets. Tips show your own keys (a rebound key is shown as rebound; unbound hotkeys and switched-off features have no tip). A tip whose button is not on screen yet (another page, a closed panel, the formula editor) waits for a later visit. Back / Next, × skips the rest of the page, "Turn off tips" switches the guide off.
+  - **Only new features** (off by default): tips only for features added after the AB-key version you started with (an update from v1.7.2 counts from v1.7.2); they carry a "New" badge.
+  - **? in the A+B key panel** (next to ⧉ and ⚙️, only on Abacum pages) shows every tip of the current page again, also with the guide off; from the pop-out window it shows them in the Abacum tab.
+  - **Update in place** ([Update](#update)): `scripts\update.ps1` (now inside the zip) updates a zip install in its own folder, so a Reload keeps every setting. Loading a new version from another folder starts from defaults.
+  - Options → Guide → **Show all tips again** forgets which tips were shown. That list is stored apart from the config, so Export / Import does not carry it. No new permissions.
 
 ### v1.7.2
 

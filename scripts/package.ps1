@@ -29,6 +29,9 @@ Copy-Item -Path (Join-Path $root "src") -Destination $staging -Recurse
 # Icons and option previews are referenced by the manifest and options page.
 Copy-Item -Path (Join-Path $root "assets") -Destination $staging -Recurse
 Copy-Item -Path (Join-Path $root "README.md") -Destination $staging
+# In-place updater for installs made from this zip (keeps the extension's settings).
+New-Item -Path (Join-Path $staging "scripts") -ItemType Directory | Out-Null
+Copy-Item -Path (Join-Path $root "scripts/update.ps1") -Destination (Join-Path $staging "scripts")
 
 Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $zipPath
 Remove-Item $staging -Recurse -Force

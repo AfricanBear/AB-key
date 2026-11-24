@@ -205,6 +205,17 @@ a.app-version:focus-visible {
   font-size: 15px;
 }
 
+/* Shows the AB-key guide tips of the page (only on Abacum pages). */
+.panel-guide-btn {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.panel-options-btn[hidden] {
+  display: none;
+}
+
 /* Detached window: fills the window, no iframe rounding, no Pop out button. */
 html.is-detached,
 html.is-detached body {

@@ -1,11 +1,23 @@
 import { getConfig, resetConfig } from "./config-store.js";
 import { LogLevel, log } from "../shared/logger.js";
 import { DETACH_MESSAGE, openDetachedPanel } from "./detached-window.js";
+import { GUIDE_KEY, guideStateOnInstalled } from "../shared/guide-state.js";
 
 // Versions before 1.6.1 kept a log of up to 500 entries in storage that nothing read.
 const LEGACY_LOG_KEY = "mv3ClickAutomation.logs";
 
-chrome.runtime.onInstalled.addListener(async ({ reason }) => {
+async function initGuideState(reason, previousVersion) {
+  const stored = await chrome.storage.local.get(GUIDE_KEY);
+  const next = guideStateOnInstalled(stored[GUIDE_KEY], {
+    reason,
+    previousVersion,
+    version: chrome.runtime.getManifest().version
+  });
+  await chrome.storage.local.set({ [GUIDE_KEY]: next });
+}
+
+chrome.runtime.onInstalled.addListener(async ({ reason, previousVersion }) => {
+  await initGuideState(reason, previousVersion).catch(() => {});
   // Only a fresh install starts from defaults. Updates and "Reload" of an unpacked
   // extension keep the user's config and just migrate it.
   if (reason === chrome.runtime.OnInstalledReason.INSTALL) {

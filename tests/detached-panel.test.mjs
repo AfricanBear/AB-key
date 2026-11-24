@@ -112,7 +112,7 @@ test("windows only need permissions the extension already has", () => {
 
 test("panel header has a Pop out button next to Options, hidden in the detached window", () => {
   const html = read("src/popup/popup.html");
-  assert.match(html, /<div class="panel-header-actions">\s*<button[^>]*id="detachButton"[^>]*title="Pop out to a new window"[\s\S]*?id="optionsButton"/);
+  assert.match(html, /<div class="panel-header-actions">[\s\S]*?<button[^>]*id="detachButton"[^>]*title="Pop out to a new window"[\s\S]*?id="optionsButton"/);
   const css = read("src/popup/popup.css");
   assert.match(css, /html\.is-detached \.panel-detach-btn \{\s*display: none;/);
   const script = read("src/popup/popup.js");
@@ -122,7 +122,7 @@ test("panel header has a Pop out button next to Options, hidden in the detached 
 
 // --- page: the in-page panel closes and reports its context -----------------------------------
 
-function runPanelHost({ rail = ["Info", "Settings"], nav = ["Spaces", "Models"] } = {}) {
+function runPanelHost({ rail = ["Info", "Settings"], nav = ["Spaces", "Models"], guide } = {}) {
   const listeners = { message: [], runtime: [] };
   const nodes = new Map();
   const makeNode = (tag) => {
@@ -174,7 +174,8 @@ function runPanelHost({ rail = ["Info", "Settings"], nav = ["Spaces", "Models"] 
       }
     },
     AbKeyToolbarRail: { describe: () => ({ buttons: rail.map((label) => ({ label })) }) },
-    AbKeySidebarNav: { describe: () => nav.map((label) => ({ label })) }
+    AbKeySidebarNav: { describe: () => nav.map((label) => ({ label })) },
+    AbKeyGuide: guide
   };
   context.globalThis = context;
   vm.runInNewContext(read("src/content/ab-key-panel-host.js"), context);
@@ -209,6 +210,30 @@ test("the in-page panel closes after Pop out, but only on a message from its own
   post({ type: "AB_KEY_PANEL_CLOSE" }, iframe.contentWindow);
   assert.ok(!nodes.has("ab-key-panel-root"));
   assert.ok(!nodes.has("ab-key-panel-backdrop"));
+});
+
+test("the ? button of the in-page panel closes it and replays the guide of the page", () => {
+  const replays = [];
+  const { nodes, send, post } = runPanelHost({ guide: { replay: () => replays.push("replay") } });
+  send({ type: "TOGGLE_AB_KEY_PANEL" });
+  const iframe = nodes.get("ab-key-panel-root").children[0];
+  post({ type: "AB_KEY_GUIDE_REPLAY" }, { name: "someone else" });
+  assert.deepEqual(replays, []);
+  assert.ok(nodes.has("ab-key-panel-root"));
+  post({ type: "AB_KEY_GUIDE_REPLAY" }, iframe.contentWindow);
+  assert.deepEqual(replays, ["replay"]);
+  assert.ok(!nodes.has("ab-key-panel-root"));
+});
+
+test("panel header has a ? button for the guide, only on Abacum pages", () => {
+  const html = read("src/popup/popup.html");
+  assert.match(html, /<div class="panel-header-actions">\s*<button[^>]*id="guideButton"[^>]*hidden>\?<\/button>/);
+  const css = read("src/popup/popup.css");
+  assert.match(css, /\.panel-options-btn\[hidden\] \{\s*display: none;/, "the button's display:inline-flex must not beat hidden");
+  const script = read("src/popup/popup.js");
+  assert.match(script, /guideButton\.hidden = !\/\(\^\|\\.\)abacum\\.io\$\/\.test\(panelHostname\)/);
+  assert.match(script, /postMessage\(\{ type: GUIDE_REPLAY_MESSAGE \}/);
+  assert.match(script, /chrome\.tabs\.sendMessage\(tabId, \{ type: GUIDE_REPLAY_MESSAGE \}\)/, "the detached window replays in its Abacum tab");
 });
 
 // --- detached window: follows the active Abacum tab -------------------------------------------
