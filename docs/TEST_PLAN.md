@@ -56,6 +56,7 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Change a hotkey in Options and Save: the window updates without reopening.
   - Click ⧉ again from another tab: the open window is focused, no second window.
   - Move / widen the window, close it, pop out again: it opens at the same place and width.
+- Tab title: on any Abacum page the tab reads "<client> | <page> - Abacum", with the client name from the organization switcher at the bottom left (not an emoji or icon name); it updates on in-app navigation.
 - Version number: the A+B key panel and the Options page show "A+B key v<manifest version>" in the title.
 - Pin columns in dataset Viewer (dataset → **Viewer** tab):
   - Hover a data column header: a grey pin appears left of the filter button; the service columns (checkbox, status) have none.

@@ -235,6 +235,10 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 
 ## Releases
 
+### v1.8.3
+
+- **Fix: client name in the tab title.** Abacum moved the client logo to the organization switcher at the bottom of the left nav, and the title picked up an emoji icon instead of the client name (e.g. "⏲️ | Business P&L - Spaces - Abacum"). The name now comes from that switcher.
+
 ### v1.8.2
 
 - **Update a zip install with one command.** `scripts\update.ps1` without `-Zip` downloads the latest GitHub release itself and does nothing when AB-key is already up to date; `-Version` picks a release, `-Force` reinstalls. `-Zip` still uses a file you have. Installs of v1.8.1 and older need one update with the new script first (README → Update → Older zip installs).

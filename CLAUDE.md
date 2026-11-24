@@ -77,6 +77,10 @@ Abacum releases.
   marker (only a hashed class + `rgba(255,255,255,.2)` background); the light nav marks it
   itself (`data-ab-key-nav-active`). Bottom: WhatsNew, HelpAndSupport (menu
   `help-and-support-contextual-menu`, "Abacum Academy" calls `window.open`), Settings.
+- Organization switcher (bottom of the left nav, replaced the top-left client logo):
+  `button[data-testid="sidebar-organization-switcher"]` with `aria-label="<Client> · <Role> · ..."`;
+  its logo `img` has an empty `alt`. Emoji icons are `img[alt="<emoji>"]`, so never take the
+  first `img[alt]` as the client name.
 - AI chat: `toolbar-rail-button-ai-agent` toggles `[data-testid="ai-chat"]`.
 - Variable row menu: right-click (a synthetic `contextmenu` works) on the name cell →
   `[data-testid="mb-contextual-menu"] [role=menuitem]` (Rename / Duplicate / Delete variable …).
