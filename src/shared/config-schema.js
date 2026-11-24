@@ -1,6 +1,6 @@
 import { ErrorCode, ExtensionError } from "./errors.js";
 
-export const CURRENT_CONFIG_VERSION = 10;
+export const CURRENT_CONFIG_VERSION = 11;
 export const CONFIG_KEY = "mv3ClickAutomation.config";
 
 const ABACUM_HOSTS = ["app.abacum.io"];
@@ -158,7 +158,8 @@ const rowMenuSteps = (item) => [
 ];
 const ROW_ACTION_POLICY = { timeoutMs: 2000, retryPolicy: { attempts: 8, intervalMs: 200, useMutationObserver: true } };
 
-const RENAME_VARIABLE_ACTION = {
+// Shipped in v7-v10: right-click, then "Rename variable". Kept to recognise it in migrateV10ToV11.
+const LEGACY_RENAME_VARIABLE_ACTION = {
   actionId: "action.renameVariable",
   label: "Rename variable",
   enabled: true,
@@ -166,6 +167,15 @@ const RENAME_VARIABLE_ACTION = {
   // Unused while executionPolicy.steps is set; kept for the schema (required field).
   locatorProfile: structuredClone(rowMenuSteps("Rename variable")[0].locatorProfile),
   executionPolicy: { ...structuredClone(ROW_ACTION_POLICY), steps: rowMenuSteps("Rename variable") }
+};
+
+// Double-clicking the name cell opens the same rename field as the menu, without the menu round
+// trip; Abacum puts the caret at the end of the name.
+const RENAME_STEPS = [{ trigger: "dblclick", locatorProfile: { preferredSelectors: [FOCUSED_VARIABLE_NAME], preferredOnly: true } }];
+const RENAME_VARIABLE_ACTION = {
+  ...structuredClone(LEGACY_RENAME_VARIABLE_ACTION),
+  locatorProfile: structuredClone(RENAME_STEPS[0].locatorProfile),
+  executionPolicy: { ...structuredClone(ROW_ACTION_POLICY), steps: structuredClone(RENAME_STEPS) }
 };
 
 // Duplicate is saved by Abacum immediately. Ticked rows (bulk toolbar) win over the focused row.
@@ -533,6 +543,18 @@ function migrateV9ToV10(v9) {
   return next;
 }
 
+// v10 -> v11: Alt+R double-clicks the name instead of going through the row menu. Only the
+// shipped action is replaced; one the user edited is kept.
+function migrateV10ToV11(v10) {
+  const next = structuredClone(v10);
+  const index = next.actions.findIndex((action) => action.actionId === RENAME_VARIABLE_ACTION.actionId);
+  if (index >= 0 && sameJson(next.actions[index], LEGACY_RENAME_VARIABLE_ACTION)) {
+    next.actions[index] = structuredClone(RENAME_VARIABLE_ACTION);
+  }
+  next.configVersion = 11;
+  return next;
+}
+
 /** Pure: never mutates rawConfig. */
 export function migrateConfig(rawConfig) {
   if (!rawConfig) return createDefaultConfig();
@@ -567,6 +589,9 @@ export function migrateConfig(rawConfig) {
   }
   if (version < 10) {
     next = migrateV9ToV10(next);
+  }
+  if (version < 11) {
+    next = migrateV10ToV11(next);
   }
   if (typeof next.abacumTabTitleEnabled !== "boolean") next.abacumTabTitleEnabled = DEFAULT_CONFIG.abacumTabTitleEnabled;
   if (typeof next.lightThemeNavEnabled !== "boolean") next.lightThemeNavEnabled = DEFAULT_CONFIG.lightThemeNavEnabled;

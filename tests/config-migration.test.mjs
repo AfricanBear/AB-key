@@ -325,7 +325,7 @@ test("v9 -> v10: commandBindings and the unused action.primary are dropped, the 
     config.actions.unshift(structuredClone(PRIMARY));
   });
   const migrated = migrateConfig(v9);
-  assert.equal(migrated.configVersion, 10);
+  assert.equal(migrated.configVersion, CURRENT_CONFIG_VERSION);
   assert.equal(migrated.commandBindings, undefined);
   assert.equal(action(migrated, "action.primary"), undefined);
   assert.deepEqual(migrated.hotkeys, v9.hotkeys);
@@ -341,6 +341,57 @@ test("v9 -> v10: action.primary stays when a user hotkey uses it", () => {
     })
   );
   assert.equal(action(migrated, "action.primary").enabled, true);
+});
+
+// --- v11: Alt+R double-clicks the name instead of using the row menu -----------------------
+
+const FOCUSED_NAME = ".ag-row.variable-row.ag-row-focus [col-id='name']";
+const LEGACY_RENAME_STEPS = [
+  { trigger: "contextmenu", locatorProfile: { preferredSelectors: [FOCUSED_NAME], preferredOnly: true } },
+  {
+    locatorProfile: {
+      preferredSelectors: ["[data-testid='mb-contextual-menu'] [role='menuitem']"],
+      textCriteria: { mode: "exact", value: "Rename variable", caseSensitive: false },
+      preferredOnly: true
+    }
+  }
+];
+const legacyRename = () => ({
+  actionId: "action.renameVariable",
+  label: "Rename variable",
+  enabled: true,
+  scope: { hosts: ["app.abacum.io"] },
+  locatorProfile: structuredClone(LEGACY_RENAME_STEPS[0].locatorProfile),
+  executionPolicy: {
+    timeoutMs: 2000,
+    retryPolicy: { attempts: 8, intervalMs: 200, useMutationObserver: true },
+    steps: structuredClone(LEGACY_RENAME_STEPS)
+  }
+});
+const withRename = (version, rename) =>
+  storedAt(version, (config) => {
+    config.actions[config.actions.findIndex((item) => item.actionId === "action.renameVariable")] = rename;
+  });
+
+test("v10 -> v11: the shipped Alt+R menu action becomes a double-click on the name", () => {
+  const v10 = withRename(10, legacyRename());
+  const migrated = migrateConfig(v10);
+  assert.equal(migrated.configVersion, 11);
+  assert.deepEqual(action(migrated, "action.renameVariable"), action(createDefaultConfig(), "action.renameVariable"));
+  assert.deepEqual(action(migrated, "action.renameVariable").executionPolicy.steps, [
+    { trigger: "dblclick", locatorProfile: { preferredSelectors: [FOCUSED_NAME], preferredOnly: true } }
+  ]);
+  const others = (config) => config.actions.filter((item) => item.actionId !== "action.renameVariable");
+  assert.deepEqual(others(migrated), others(v10));
+  assert.deepEqual(migrated.hotkeys, v10.hotkeys);
+  assert.deepEqual(migrateConfig(migrated), migrated, "idempotent");
+});
+
+test("v10 -> v11: an edited Alt+R action is kept", () => {
+  const edited = legacyRename();
+  edited.executionPolicy.timeoutMs = 4000;
+  const migrated = migrateConfig(withRename(10, edited));
+  assert.deepEqual(action(migrated, "action.renameVariable"), edited);
 });
 
 // --- lintConfig: hotkeys that cannot fire ---------------------------------------------------

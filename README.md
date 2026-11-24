@@ -117,6 +117,11 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 
 ## Releases
 
+### v1.7.2
+
+- **Alt+R opens the rename field faster.** It double-clicks the focused variable's name instead of going through the right-click menu, so there is no menu wait or flicker; the caret lands at the end of the name. Config migrates to schema v11: the shipped Alt+R action is replaced, one you edited is kept.
+- Engine: steps can double-click an element (`trigger: "dblclick"`).
+
 ### v1.7.1
 
 - **Dimensions toggle: "+N" shows the rest on hover.** A variable with more than three dimensions shows "+N" after the first three chips; hovering it now pops up the hidden dimensions at once, one per line, in the style of Abacum's tooltips (it used to be the browser's slow tooltip with the whole list). A shown chip cut off by a narrow column shows its full name on hover.

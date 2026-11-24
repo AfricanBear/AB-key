@@ -109,7 +109,7 @@ When changing the config schema, add a migration test to `tests/config-migration
   - Hovering a numbered link shows "Models · Alt+Shift+2" etc.; Library, More, Help & support tooltips are unchanged.
 - Alt+Q: opens the AI chat; pressed again (also with the cursor in the chat input) closes it.
 - Alt+H: opens Abacum Academy in a new tab; the Help & support menu does not stay open.
-- Alt+R (models): click any cell of a variable row, Alt+R → the name field opens with the current name; Esc cancels, Save stays disabled. Without a focused variable row nothing happens.
+- Alt+R (models): click any cell of a variable row, Alt+R → the name field opens with the current name, caret at the end, and no row menu flashes; Esc cancels, Save stays disabled. Without a focused variable row nothing happens.
 - Alt+C (models) — use a test model, Abacum saves the copy at once:
   - Focused row: creates "<name> (1)". Delete it afterwards (row menu → Delete variable) and press Save.
   - Ticked rows: uses the bulk "Duplicate (n)" button instead of the row menu.

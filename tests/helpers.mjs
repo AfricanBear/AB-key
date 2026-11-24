@@ -37,7 +37,7 @@ export function createPage({ hostname = "app.abacum.io", pathname = "/app/module
       style: {},
       isConnected: true,
       click: () => clicks.push(name),
-      // Right-click menus (Alt+R / Alt+C) are opened with a contextmenu event.
+      // Alt+R double-clicks (dblclick event); Alt+C opens the row menu with a contextmenu event.
       dispatchEvent: (event) => clicks.push(`${event.type}:${name}`),
       getBoundingClientRect: () => rect,
       getAttribute: (attr) => (attr === "role" ? role : null),

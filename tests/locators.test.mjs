@@ -146,11 +146,11 @@ test("Alt+H opens Help & support, then exactly 'Abacum Academy'", async () => {
   assert.deepEqual(await pressKey(page, "KeyH"), ["Help & support", "Abacum Academy"]);
 });
 
-test("Alt+R right-clicks the focused variable's name, then 'Rename variable'", async () => {
+test("Alt+R double-clicks the focused variable's name (no row menu)", async () => {
   const page = createPage();
   const items = ROW_MENU.map((name) => page.element(name, { role: "menuitem" }));
   Object.assign(page.dom, { [FOCUSED_NAME]: [page.element("Revenue")], [ROW_MENU_ITEMS]: items });
-  assert.deepEqual(await pressKey(page, "KeyR"), ["contextmenu:Revenue", "Rename variable"]);
+  assert.deepEqual(await pressKey(page, "KeyR"), ["dblclick:Revenue"]);
 });
 
 test("Alt+R does nothing without a focused variable row, even if the text is on the page", async () => {
