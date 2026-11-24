@@ -23,17 +23,51 @@ function fakeHtml() {
   };
 }
 
-/** Page-world script on a page with no grid: only its pure helpers are used. */
-function loadMain() {
+/** A tiny element: enough for the "+N" popup (children, dataset, style, rects). */
+function fakeElement(tag, rect = { left: 0, top: 0, bottom: 0, width: 0, height: 0 }) {
+  return {
+    tag,
+    className: "",
+    textContent: "",
+    dataset: {},
+    style: {},
+    attrs: {},
+    children: [],
+    parent: null,
+    setAttribute(name, value) {
+      this.attrs[name] = String(value);
+    },
+    appendChild(child) {
+      child.parent = this;
+      this.children.push(child);
+      return child;
+    },
+    remove() {
+      if (this.parent) this.parent.children = this.parent.children.filter((child) => child !== this);
+      this.parent = null;
+    },
+    getBoundingClientRect: () => rect
+  };
+}
+
+/** Page-world script on a page with no grid: only its pure helpers and the popup are used. */
+function loadMain({ view = { width: 1000, height: 800 }, popupSize = { width: 120, height: 48 } } = {}) {
   const html = fakeHtml();
+  html.clientWidth = view.width;
+  html.clientHeight = view.height;
+  const body = fakeElement("body");
+  const listeners = {};
   const ctx = {
     document: {
       documentElement: html,
-      body: {},
+      body,
       head: null,
       querySelector: () => null,
-      querySelectorAll: () => [],
-      getElementById: () => null
+      querySelectorAll: (selector) =>
+        selector === ".ab-key-model-dims-popup" ? body.children.filter((el) => el.className === "ab-key-model-dims-popup") : [],
+      getElementById: () => null,
+      createElement: (tag) => fakeElement(tag, { left: 0, top: 0, bottom: popupSize.height, ...popupSize }),
+      addEventListener: (type, fn) => (listeners[type] = fn)
     },
     location: { pathname: "/app/library" },
     MutationObserver: class {
@@ -44,7 +78,15 @@ function loadMain() {
   ctx.globalThis = ctx;
   vm.createContext(ctx);
   vm.runInContext(MAIN_SCRIPT, ctx, { filename: "abacum-model-dimensions-main.js" });
-  return ctx.AbKeyModelDimensionsMain;
+  return Object.assign(Object.create(ctx.AbKeyModelDimensionsMain), { body, listeners });
+}
+
+/** A "+N" chip at rect whose closest() finds itself, as inside the chips box. */
+function moreChip(names, rect) {
+  const chip = fakeElement("span", rect);
+  chip.dataset.names = JSON.stringify(names);
+  chip.closest = (selector) => (selector === ".ab-key-model-dims .ab-key-more" ? chip : null);
+  return chip;
 }
 
 async function loadIsolated(stored) {
@@ -82,16 +124,16 @@ async function loadIsolated(stored) {
   };
 }
 
-test("chips: first three names, then +N with the full list in the title; empty is marked", () => {
+test("chips: first three names, then +N hiding the rest; empty is marked", () => {
   const { chipModel } = loadMain();
-  assert.deepEqual(plain(chipModel(["a", "b"])), { shown: ["a", "b"], more: 0, title: "a, b", empty: false });
+  assert.deepEqual(plain(chipModel(["a", "b"])), { shown: ["a", "b"], hidden: [], more: 0, empty: false });
   assert.deepEqual(plain(chipModel(["a", "b", "c", "d", "e"])), {
     shown: ["a", "b", "c"],
+    hidden: ["d", "e"],
     more: 2,
-    title: "a, b, c, d, e",
     empty: false
   });
-  assert.deepEqual(plain(chipModel([])), { shown: [], more: 0, title: "", empty: true });
+  assert.deepEqual(plain(chipModel([])), { shown: [], hidden: [], more: 0, empty: true });
   assert.equal(chipModel(undefined).empty, true);
   assert.deepEqual(plain(chipModel(["a", "", null, "b"]).shown), ["a", "b"], "junk entries skipped");
 });
@@ -156,4 +198,35 @@ test("page-world script: the button is cloned from Show Builder Values and only 
   assert.match(MAIN_SCRIPT, /button\[aria-label="Show Builder Values"\]/);
   assert.match(MAIN_SCRIPT, /toolbar-rail-button-module-dimensions/);
   assert.match(MAIN_SCRIPT, /\^\\\/app\\\/modules/);
+});
+
+test("+N popup: hovering the chip lists the hidden dimensions under it, leaving removes it", () => {
+  const page = loadMain();
+  const chip = moreChip(["Region", "Product line"], { left: 300, top: 100, bottom: 116, width: 20, height: 16 });
+  page.listeners.mouseover({ target: chip, relatedTarget: null });
+  const popups = page.body.children;
+  assert.equal(popups.length, 1);
+  assert.equal(popups[0].attrs.role, "tooltip");
+  assert.deepEqual(popups[0].children.map((line) => line.textContent), ["Region", "Product line"]);
+  assert.deepEqual(plain(popups[0].style), { top: "120px", left: "300px" });
+
+  page.listeners.mouseover({ target: chip, relatedTarget: chip }); // moving inside the chip
+  assert.equal(page.body.children.length, 1, "no second popup");
+  page.listeners.mouseout({ target: chip, relatedTarget: null });
+  assert.equal(page.body.children.length, 0);
+
+  page.listeners.mouseover({ target: chip, relatedTarget: null });
+  page.listeners.scroll();
+  assert.equal(page.body.children.length, 0, "grid scroll hides it");
+
+  page.listeners.mouseover({ target: { closest: () => null }, relatedTarget: null });
+  assert.equal(page.body.children.length, 0, "other chips and cells show nothing");
+});
+
+test("+N popup: flips above the chip at the bottom of the window and stays inside it", () => {
+  const page = loadMain({ view: { width: 400, height: 300 }, popupSize: { width: 120, height: 48 } });
+  page.showPopup(moreChip(["a", "b", "c"], { left: 350, top: 270, bottom: 286, width: 20, height: 16 }));
+  assert.deepEqual(plain(page.body.children[0].style), { top: "218px", left: "276px" });
+  page.hidePopup();
+  assert.equal(page.showPopup(moreChip([], { left: 0, top: 0, bottom: 0 })), null, "nothing hidden, no popup");
 });
