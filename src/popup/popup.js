@@ -4,6 +4,9 @@ const hotkeyList = document.getElementById("hotkeyList");
 const emptyState = document.getElementById("emptyState");
 const optionsButton = document.getElementById("optionsButton");
 const detachButton = document.getElementById("detachButton");
+const guideButton = document.getElementById("guideButton");
+// Tips of the AB-key guide (src/content/ab-key-guide.js) for the page the panel belongs to.
+const GUIDE_REPLAY_MESSAGE = "AB_KEY_GUIDE_REPLAY";
 
 // Extension version from manifest.json, next to the title.
 const appVersion = document.getElementById("appVersion");
@@ -105,6 +108,7 @@ function syncPanelHeight() {
 
 let ownWindowId = null;
 let fittedHeight = 0;
+let live = null;
 
 /** Grow or shrink the detached window to its content when the list changes. */
 function fitWindowHeight(contentHeight) {
@@ -118,9 +122,33 @@ function contextKey() {
   return JSON.stringify([panelHostname, panelPathname, railLabels, navLabels]);
 }
 
+/** The guide runs only on Abacum pages (its content script is not injected elsewhere). */
+function syncGuideButton() {
+  if (!guideButton) return;
+  guideButton.hidden = !/(^|\.)abacum\.io$/.test(panelHostname);
+}
+
+async function showGuide() {
+  if (!detached) {
+    // In-page panel: the host closes the panel and starts the tips in the same tab.
+    window.parent.postMessage({ type: GUIDE_REPLAY_MESSAGE }, "*");
+    return;
+  }
+  const tabId = live?.tabId;
+  if (!Number.isInteger(tabId)) return;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    await chrome.windows.update(tab.windowId, { focused: true });
+    await chrome.tabs.sendMessage(tabId, { type: GUIDE_REPLAY_MESSAGE });
+  } catch {
+    // tab closed or without AB-key
+  }
+}
+
 function applyContext(context) {
   const before = contextKey();
   panelHostname = context.host || panelHostname;
+  syncGuideButton();
   panelPathname = typeof context.path === "string" ? context.path : null;
   railLabels = Array.isArray(context.rail) ? context.rail.map((label) => String(label || "")) : null;
   navLabels = Array.isArray(context.nav) ? context.nav.map((label) => String(label || "")) : null;
@@ -138,7 +166,7 @@ async function startDetached() {
     if (win.id !== ownWindowId) return;
     chrome.storage.local.set({ [BOUNDS_KEY]: { left: win.left, top: win.top, width: win.width } });
   });
-  const live = createLiveContext({ ownWindowId, onContext: applyContext });
+  live = createLiveContext({ ownWindowId, onContext: applyContext });
   const sourceTab = Number.parseInt(panelParams.get("tab"), 10);
   await live.start(Number.isInteger(sourceTab) ? sourceTab : undefined);
   // Rail labels also change without navigation (an object or a side panel opens).
@@ -204,6 +232,8 @@ async function init() {
     chrome.runtime.openOptionsPage();
   });
   detachButton?.addEventListener("click", popOut);
+  guideButton?.addEventListener("click", showGuide);
+  syncGuideButton();
 
   const raw = await chrome.storage.local.get(CONFIG_KEY);
   currentConfig = migrateConfig(raw[CONFIG_KEY]);

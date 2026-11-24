@@ -308,6 +308,10 @@ export const DEFAULT_CONFIG = {
   datasetTransformLinkEnabled: true,
   unsavedVariableDeleteFixEnabled: true,
   modelDimensionsEnabled: true,
+  // AB-key guide (src/content/ab-key-guide.js): tips at the buttons, and whether to show only
+  // the features shipped after the version the user started with.
+  guideEnabled: true,
+  guideOnlyNew: false,
   hotkeys: [
     ...RAIL_POSITIONS.map(buildRailHotkey),
     { key: "alt+e", actionId: "action.bulkDimensions", hosts: [...ABACUM_HOSTS], paths: [...MODEL_PATHS] },
@@ -605,6 +609,8 @@ export function migrateConfig(rawConfig) {
   if (typeof next.unsavedVariableDeleteFixEnabled !== "boolean") {
     next.unsavedVariableDeleteFixEnabled = DEFAULT_CONFIG.unsavedVariableDeleteFixEnabled;
   }
+  if (typeof next.guideEnabled !== "boolean") next.guideEnabled = DEFAULT_CONFIG.guideEnabled;
+  if (typeof next.guideOnlyNew !== "boolean") next.guideOnlyNew = DEFAULT_CONFIG.guideOnlyNew;
   if (typeof next.diagnosticsEnabled !== "boolean") next.diagnosticsEnabled = DEFAULT_CONFIG.diagnosticsEnabled;
   validateConfigShape(next);
   return next;

@@ -125,6 +125,28 @@
           </fieldset>
 
           <fieldset class="feature-group">
+            <legend class="feature-group-title">Guide</legend>
+            <div class="toggle-row">
+              <input type="checkbox" id="guideEnabled" />
+              <span class="toggle-body">
+                <label class="toggle-text" for="guideEnabled">Show tips at AB-key buttons</label>
+                <span class="toggle-hint">The first time a page has AB-key hotkeys or features, a short tip points at each of them (Back / Next; × skips the rest of the page). A tip whose button is not on screen yet waits for a later visit. The <b>?</b> button in the A+B key panel shows the tips of the current page again, also when this is off.</span>
+                <span class="toggle-actions">
+                  <button type="button" id="resetGuideBtn" class="btn btn-toolbar">Show all tips again</button>
+                </span>
+              </span>
+            </div>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="guideOnlyNew" />
+              <span class="toggle-body">
+                <span class="toggle-text">Only new features</span>
+                <span class="toggle-hint">Show tips only for features added after the AB-key version you started with (for those who already know the rest). New ones are marked "New".</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset class="feature-group">
             <legend class="feature-group-title">Advanced</legend>
             <label class="toggle-row">
               <input type="checkbox" id="diagnosticsEnabled" />

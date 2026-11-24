@@ -141,6 +141,14 @@ When changing the config schema, add a migration test to `tests/config-migration
 - Alt+E (Edit Dimensions, Models builder):
   - With the variable's dimensions button visible: opens the dimensions modal (`module-builder-dbv-modal`).
   - Without that button on the page (or while the modal is open): nothing is clicked — in particular not "Show Builder Formulas".
+- Guide (Options → Guide; start with **Show all tips again**):
+  - Open a model: after ~2 s a centred "AB-key tips" card, then Next walks the left nav link, the first right toolbar button, the AI chat button, Help & support, Save, a variable name, the Dimensions toggle; each with a purple ring and the tip inside the window. Counter "n / N", Back works.
+  - × on a tip: the rest of the page's tips do not come back after reload. Open a dataset Viewer: pin, a data cell and an f chip get tips (the general ones are not repeated).
+  - Open the Dimensions panel on a model: an Edit dimensions tip appears; open the formula editor: a Ctrl+Backspace tip appears and typing still works (the tip never takes focus).
+  - No tip opens over an Abacum dialog or menu, or while the A+B key panel is open.
+  - Rebind Alt+S in the JSON: the Save tip shows the new key. Switch a feature off: its tip is gone.
+  - "Turn off tips": the guide toggle in Options is off after reload of Options; no tips. The panel's ? still shows all tips of the page (no "Turn off tips" link in that mode); ? on a non-Abacum page is hidden; ? from the pop-out window focuses the Abacum tab and shows them there.
+  - Only new features on, with `abKey.guide.baseline` "1.5.0" (set in the service worker console): only the variable row and Dimensions toggle tips, with "New".
 - Extension reload / update keeps the saved configuration (not reset to defaults).
 - Options → Advanced → Configuration (JSON is what Save stores):
   - Collapsed on first open; open it, reload Options: still open; close it, reload: closed. A failed Save opens it.

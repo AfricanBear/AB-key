@@ -103,9 +103,15 @@
 
   window.addEventListener("message", (event) => {
     const type = event.data?.type;
-    if (type !== "AB_KEY_PANEL_RESIZE" && type !== "AB_KEY_PANEL_CLOSE") return;
+    if (type !== "AB_KEY_PANEL_RESIZE" && type !== "AB_KEY_PANEL_CLOSE" && type !== "AB_KEY_GUIDE_REPLAY") return;
     const iframe = document.querySelector(`#${ROOT_ID} .${IFRAME_CLASS}`);
     if (!iframe || event.source !== iframe.contentWindow) return;
+    if (type === "AB_KEY_GUIDE_REPLAY") {
+      // The ? button: close the panel, then show the tips of this page (ab-key-guide.js).
+      closePanel();
+      globalThis.AbKeyGuide?.replay?.();
+      return;
+    }
     // The panel was popped out into its own window.
     if (type === "AB_KEY_PANEL_CLOSE") closePanel();
     else resizePanel(event.data.height);

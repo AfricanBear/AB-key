@@ -16,6 +16,7 @@ const EXPECTED_GROUPS = {
     "datasetTwoRowHeaderEnabled",
     "datasetTransformLinkEnabled"
   ],
+  Guide: ["guideEnabled", "guideOnlyNew"],
   Advanced: ["diagnosticsEnabled"]
 };
 

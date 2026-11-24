@@ -1,6 +1,7 @@
 import { CONFIG_KEY, lintConfig, migrateConfig, validateConfigShape } from "../shared/config-schema.js";
 import { flagsFromText, setFlagInText } from "./config-form.js";
 import { diffForm } from "./dirty-state.js";
+import { GUIDE_KEY } from "../shared/guide-state.js";
 
 const configText = document.getElementById("configJson");
 const statusEl = document.getElementById("status");
@@ -185,6 +186,17 @@ async function resetDatasetColumns() {
   setStatus("Pinned columns and widths were reset. Widths return to defaults when the Viewer is reopened.");
 }
 
+// Forget which guide tips were shown; the version the user started with stays.
+async function resetGuide() {
+  const data = await chrome.storage.local.get(GUIDE_KEY);
+  const saved = data[GUIDE_KEY] || {};
+  await chrome.storage.local.set({ [GUIDE_KEY]: { ...saved, seen: [] } });
+  setStatus("Tips will show again on Abacum pages (if Show tips is on and saved).");
+}
+
+document.getElementById("resetGuideBtn").addEventListener("click", () =>
+  resetGuide().catch((error) => setStatus(`Reset failed: ${error.message}`, true))
+);
 document.getElementById("resetDatasetColumnsBtn").addEventListener("click", () =>
   resetDatasetColumns().catch((error) => setStatus(`Reset failed: ${error.message}`, true))
 );
