@@ -63,6 +63,13 @@ Hovering a toolbar button or a navigation link shows its hotkey in the tooltip.
 - Two-row column headers in the Viewer.
 - Clicking the f chip in a transformed column's header selects its transformation step.
 
+![Dataset Viewer with AB-key: selection sum, pinned columns, two-row headers and the f chip of a transformed column](docs/images/dataset-viewer.png)
+
+1. Sum, count and average of the selected cells.
+2. Pinned columns: the pin button in the header (blue when pinned).
+3. Two-row headers: the column name on top, its buttons below.
+4. The f chip of a transformed column: a click selects its step in the Transform panel.
+
 Details for each feature are in [Releases](#releases).
 
 ## How it works
