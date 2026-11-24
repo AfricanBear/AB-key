@@ -116,9 +116,25 @@ which tips were already shown).
 
 **From a git checkout:**
 
-1. `git pull` in the AB-key folder.
+1. Open a terminal in the AB-key folder (see below) and run `git pull`.
 2. `chrome://extensions` (or `opera://extensions`) → **Reload** on the AB-key card.
 3. Refresh open Abacum tabs.
+
+**Open a terminal in the AB-key folder** (Windows 11). It is the folder you picked in
+**Load unpacked**, the one with `manifest.json`; `chrome://extensions` shows its path on the
+AB-key card (with Developer mode on).
+
+1. Open the folder in File Explorer.
+2. Right-click an empty spot under the file list (not on a file).
+3. Choose **Open in Terminal**. Depending on the Windows version it is in the menu itself or under
+   **App extensions** (or **Show more options**).
+
+![Right-click an empty spot in the AB-key folder → App extensions → Open in Terminal](docs/images/open-terminal-in-folder.png)
+
+The terminal opens with that folder as the current one; type `git pull` and press Enter.
+
+Other ways: in File Explorer click the address bar, type `powershell` and press Enter; or in any
+terminal go to the folder first, e.g. `cd "$HOME\AB-key"` (use your own path).
 
 **From a zip** (`AB-key.zip` / `AB-key-opera.zip`, built by `scripts/package.ps1`):
 
@@ -167,6 +183,10 @@ CI (`.github/workflows/ci.yml`) runs `scripts/validate.ps1`, `npm test` and `scr
 - `./scripts/package.ps1 -Target opera` — Opera-labeled zip.
 
 ## Releases
+
+### v1.8.1
+
+- **Docs: how to open a terminal in the AB-key folder** for `git pull` (README → Update), with a screenshot. No code changes.
 
 ### v1.8.0
 
