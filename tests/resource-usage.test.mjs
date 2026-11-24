@@ -31,7 +31,11 @@ function createEnv(config, { clientName = "Acme Energy", title = "01a. Natural P
   const nodes = new Map();
   let onChanged = null;
   let stored = config; // chrome.storage is already updated when onChanged fires
-  let img = clientName ? { getAttribute: () => clientName } : null;
+  // Organization switcher at the bottom of the left nav (Nov 2026): the client name is the first
+  // part of its aria-label. Emoji icons (img[alt]) come earlier in the page and must be ignored.
+  const switcher = (name) => (name ? { getAttribute: (a) => (a === "aria-label" ? `${name} · Super admin · Logged as Agent VM` : null) } : null);
+  let org = switcher(clientName);
+  const emoji = { getAttribute: (a) => (a === "alt" ? "⏲️" : null) };
   const head = {
     appendChild(node) {
       nodes.set(node.id, node);
@@ -47,7 +51,8 @@ function createEnv(config, { clientName = "Acme Energy", title = "01a. Natural P
     addEventListener() {},
     getElementById: (id) => nodes.get(id) || null,
     createElement: () => ({ id: "", textContent: "" }),
-    querySelector: (selector) => (selector.startsWith("img[alt]") ? img : null),
+    querySelector: (selector) =>
+      selector === '[data-testid="sidebar-organization-switcher"]' ? org : selector.startsWith("img") ? emoji : null,
     querySelectorAll: () => []
   };
   class FakeObserver {
@@ -96,7 +101,7 @@ function createEnv(config, { clientName = "Acme Energy", title = "01a. Natural P
     observers,
     intervals,
     active: () => observers.filter((o) => o.active),
-    setClientName: (name) => (img = name ? { getAttribute: () => name } : null),
+    setClientName: (name) => (org = switcher(name)),
     change: async (next) => {
       stored = next;
       onChanged({ [CONFIG_KEY]: { newValue: next } }, "local");
@@ -155,7 +160,7 @@ test("tab title: re-applies the prefix when Abacum rewrites the title", async ()
   assert.equal(env.document.title, "Acme Energy | Revenue - Datasets - Abacum");
 });
 
-test("tab title: waits for the client logo, then stops retrying", async () => {
+test("tab title: waits for the organization switcher, then stops retrying", async () => {
   const env = createEnv(createDefaultConfig(), { clientName: null });
   await env.run("src/content/abacum-tab-title.js");
   assert.equal(env.document.title, "01a. Natural P&L - Models - Abacum");
