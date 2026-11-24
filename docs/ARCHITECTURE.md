@@ -39,7 +39,7 @@ changes apply to open tabs without a reload.
 ### Shared (`src/shared/`)
 
 - `config-schema.js` — default config (actions, hotkeys, feature flags), versioned migrations
-  (schema v10), shape validation, and `lintConfig` (warnings for hotkeys that cannot fire). Changing
+  (schema v11), shape validation, and `lintConfig` (warnings for hotkeys that cannot fire). Changing
   defaults of a shipped config needs a new migration that replaces only shipped values and keeps
   user edits.
 - `errors.js` — error codes (`ElementNotFound`, `OverlayBlocked`, `TimeoutExceeded`, …).

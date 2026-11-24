@@ -302,17 +302,20 @@
   }
 
   // trigger "contextmenu" opens the element's right-click menu instead of clicking it
-  // (Abacum's variable row menu: Rename / Duplicate variable).
+  // (Abacum's variable row menu: Duplicate variable); "dblclick" double-clicks it (a variable's
+  // name cell opens its rename field, caret at the end).
   function clickElement(element, trigger) {
     const guard = ensureInteractable(element);
     if (!guard.ok) return guard;
-    if (trigger === "contextmenu") {
+    if (trigger === "contextmenu" || trigger === "dblclick") {
       const rect = element.getBoundingClientRect();
       element.dispatchEvent(
-        new MouseEvent("contextmenu", {
+        new MouseEvent(trigger, {
           bubbles: true,
           cancelable: true,
-          button: 2,
+          view: window,
+          button: trigger === "contextmenu" ? 2 : 0,
+          detail: trigger === "dblclick" ? 2 : 0,
           clientX: rect.left + Math.min(20, rect.width / 2),
           clientY: rect.top + rect.height / 2
         })
